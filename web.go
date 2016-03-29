@@ -5,22 +5,16 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 )
 
 // A custom header previously used to name the stream(s) to prepend to the line
 // data. This isn't very useful yet
-const HEADER_STREAM = "X-Omnilog-Stream"
+const HeaderStream = "X-Omnilog-Stream"
+const MethodPost = "POST"
 
 // run a small web server
-func web(out *log.Logger) {
+func web(out *log.Logger, port string) {
 	http.HandleFunc("/", HandleWeb(out))
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
 	http.ListenAndServe(":"+port, nil)
 }
 
@@ -29,35 +23,38 @@ func web(out *log.Logger) {
 // useful each passing minute.
 func HandleWeb(out *log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		streams, ok := req.Header[HEADER_STREAM]
-		if !ok {
-			// log.Println("missing", HEADER_STREAM)
-			json.NewEncoder(w).Encode(&response{
-				"error: missing header", 0, 0,
+		enc := json.NewEncoder(w)
+		if req.Method != MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			enc.Encode(&response{
+				ErrMethodNotAllowed, 0,
 			})
+			log.Println(ErrMethodNotAllowed)
 			return
 		}
 
-		var rn, wn int
+		if _, ok := req.Header[HeaderStream]; !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			enc.Encode(&response{
+				ErrBadRequest, 0,
+			})
+			log.Println(ErrBadRequest)
+			return
+		}
 
+		rn := 0
 		scanner := bufio.NewScanner(req.Body)
 		for scanner.Scan() {
-			for i := 0; i < len(streams); i += 1 {
-				wn += len(streams[i]) + 1
-				// @todo do not assume tab delim, get rid of stream names
-				out.Print(streams[i], "\t", scanner.Text(), "\n")
-			}
-
+			out.Println(scanner.Text())
 			rn += len(scanner.Text())
-			wn += rn
 
 			if err := scanner.Err(); err != nil {
 				break
 			}
 		}
 
-		json.NewEncoder(w).Encode(&response{
-			"success", rn, wn,
+		enc.Encode(&response{
+			Success, rn,
 		})
 	}
 }

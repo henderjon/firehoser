@@ -11,5 +11,5 @@ to `split` will write canonically named text files of a given size (e.g.
 ## todo
 
   - graceful shutdown (catch broken pipes)
-  - command line args to alter behavior
+  - ~~command line args to alter behavior~~
   - errors for non-POST methods/more verbose responses

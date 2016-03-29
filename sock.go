@@ -7,8 +7,8 @@ import (
 )
 
 // was ripped from the examples as a TCP listener
-func sock(out *log.Logger) {
-	l, err := net.Listen("tcp", ":8081")
+func sock(out *log.Logger, port string) {
+	l, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func HandleSock(conn net.Conn, out *log.Logger) {
 		}
 
 		conn.Write((&response{
-			"success", len(scanner.Text()), len(scanner.Text()),
+			Success, len(scanner.Text()),
 		}).Bytes())
 	}
 
