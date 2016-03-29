@@ -10,6 +10,7 @@ var (
 )
 
 func init() {
+	// use log because fmt isn't goroutine safe
 	out = log.New(os.Stdout, "", 0)
 }
 

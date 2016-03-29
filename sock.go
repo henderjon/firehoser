@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-// ripped from the examples
+// was ripped from the examples as a TCP listener
 func sock(out *log.Logger) {
 	l, err := net.Listen("tcp", ":8081")
 	if err != nil {
@@ -26,6 +26,7 @@ func sock(out *log.Logger) {
 	}
 }
 
+// scans the incoming data from the connection and writes it to stdout
 func HandleSock(conn net.Conn, out *log.Logger) {
 
 	scanner := bufio.NewScanner(conn)
