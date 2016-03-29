@@ -3,10 +3,10 @@
 Similar to AWS' Firehose, this application will run listening for either
 HTTP or TCP connections (not simultaneously), scan the incoming data line by line and write it to
 STDOUT. The intended functionality was to quickly ingest line based (CSV/TSV)
-log data. Instead of writing to a file directly, writing to STDOUT allows the
+log data from many different EC2 instances being auto-scaled. Instead of writing to a file directly, writing to STDOUT allows the
 user to pipe the output to other programs. For instance, redirecting the output
 to `split` will write canonically named text files of a given size (e.g.
-`./omnilogger | split -a 9 -l 100 - mylogfile`).
+`./omnilogger | split -a 9 -l 100 - mylogfile`). To handle many streams, you could run multiple instances of this application, each on a different port or use omnilogger to coallesce them and parse them after they're on disk.
 
 ## todo
 
