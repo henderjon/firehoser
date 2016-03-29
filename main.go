@@ -6,6 +6,10 @@ import (
 	"os"
 )
 
+const (
+	ErrWrongProtocol = "err: `protocol` must be either `http` or `tcp`."
+)
+
 var (
 	out            *log.Logger
 	protocol, port string
@@ -36,7 +40,7 @@ func main() {
 	case "tcp":
 		sock(out, port)
 	default:
-		log.Fatal("flag err: `protocol` must be either `http` or `tcp`.")
+		log.Fatalln(ErrWrongProtocol)
 		os.Exit(1)
 	}
 	// sock(out)
