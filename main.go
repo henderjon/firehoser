@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	ErrWrongProtocol = "err: `protocol` must be either `http` or `tcp`."
+	ErrWrongProtocol = "err: 'protocol' must be either 'http' or 'tcp'."
 )
 
 var (
