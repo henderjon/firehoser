@@ -61,5 +61,6 @@ func getSwapFile() *log.Logger {
 		log.Fatal(err)
 	}
 	swapFile = log.New(f, "", 0)
+	// swapFile = log.New(os.Stderr, "", 0)
 	return swapFile
 }

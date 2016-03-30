@@ -33,19 +33,17 @@ func init() {
 
 	// use log because fmt isn't goroutine safe
 	out = log.New(os.Stdout, "", 0)
+	initShutdownWatcher()
 }
 
 func main() {
 	switch protocol {
 	case "http":
-		initShutdownWatcher()
 		web(out, port)
 	case "tcp":
-		initShutdownWatcher()
 		sock(out, port)
 	default:
 		log.Fatalln(ErrUnknownProtocol)
 		os.Exit(1)
 	}
-	// sock(out)
 }

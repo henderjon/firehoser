@@ -10,9 +10,6 @@ to `split` will write canonically named text files of a given size (e.g.
 
 ## todo
 
-  - graceful shutdown (catch broken pipes)
-  - how does stdout handle broken pipes
+  - ~~graceful shutdown (catch broken pipes)~~
   - ~~command line args to alter behavior~~
-  - ~~errors for non-POST methods~~/more verbose responses
-  - ~~how does split handle filename collisions~~
-  - ~~where should gzip take place~~
+  - ~~errors for non-POST methods~~/more verbose responses?
