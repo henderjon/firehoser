@@ -4,16 +4,18 @@ import (
 	"flag"
 	"log"
 	"os"
+	"sync"
 )
 
 const (
-	ErrWrongProtocol = "err: 'protocol' must be either 'http' or 'tcp'."
+	ErrUnknownProtocol = "err: 'protocol' must be either 'http' or 'tcp'."
 )
 
 var (
 	out            *log.Logger
 	protocol, port string
 	help           bool
+	wg             sync.WaitGroup
 )
 
 func init() {
@@ -36,11 +38,13 @@ func init() {
 func main() {
 	switch protocol {
 	case "http":
+		initShutdownWatcher()
 		web(out, port)
 	case "tcp":
+		initShutdownWatcher()
 		sock(out, port)
 	default:
-		log.Fatalln(ErrWrongProtocol)
+		log.Fatalln(ErrUnknownProtocol)
 		os.Exit(1)
 	}
 	// sock(out)

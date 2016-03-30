@@ -4,6 +4,7 @@ import "fmt"
 
 const (
 	Success             = "success"
+	ErrShutdown         = "err: server is shutting down"
 	ErrBadRequest       = "err: missing header"
 	ErrMethodNotAllowed = "err: method not allowed"
 )
