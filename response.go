@@ -3,10 +3,10 @@ package main
 import "fmt"
 
 const (
-	Success             = "success"
-	ErrShutdown         = "err: server is shutting down"
-	ErrBadRequest       = "err: missing header"
-	ErrMethodNotAllowed = "err: method not allowed"
+	success             = "success"
+	errShutdown         = "err: server is shutting down"
+	errBadRequest       = "err: missing header"
+	errMethodNotAllowed = "err: method not allowed"
 )
 
 // defines the properties of a response

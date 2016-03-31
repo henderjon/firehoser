@@ -1,5 +1,7 @@
 ## log all the things
 
+[![GoDoc](https://godoc.org/github.com/henderjon/omnilogger?status.svg)](https://godoc.org/github.com/henderjon/omnilogger)
+
 Omnilogger is an HTTP or TCP server that coalesces log data (line by line) from
 multiple sources to a common destination (defaults to consecutively named log
 files of ~5000 lines).

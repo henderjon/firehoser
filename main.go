@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	ErrUnknownProtocol = "err: 'protocol' must be either 'http' or 'tcp'"
+	errUnknownProtocol = "err: 'protocol' must be either 'http' or 'tcp'"
 )
 
 var (
@@ -58,7 +58,7 @@ func main() {
 	case "tcp":
 		sock(out, port)
 	default:
-		log.Fatalln(ErrUnknownProtocol)
+		log.Fatalln(errUnknownProtocol)
 		os.Exit(1)
 	}
 }

@@ -10,8 +10,8 @@ import (
 
 // A custom header previously used to name the stream(s) to prepend to the line
 // data. This isn't very useful yet
-const HeaderStream = "X-Omnilog-Stream"
-const MethodPost = "POST"
+const headerStream = "X-Omnilog-Stream"
+const methodPost = "POST"
 
 // run a small web server
 func web(out io.Writer, port string) {
@@ -30,9 +30,9 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 		if isShutdownMode() {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			enc.Encode(&response{
-				ErrShutdown, 0,
+				errShutdown, 0,
 			})
-			log.Println(ErrShutdown)
+			log.Println(errShutdown)
 			return
 		}
 
@@ -40,22 +40,22 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 		wg.Add(1)
 
 		// ensure a POST
-		if req.Method != MethodPost {
+		if req.Method != methodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			enc.Encode(&response{
-				ErrMethodNotAllowed, 0,
+				errMethodNotAllowed, 0,
 			})
-			log.Println(ErrMethodNotAllowed)
+			log.Println(errMethodNotAllowed)
 			return
 		}
 
 		// must have custom header (@TODO future validation?)
-		if _, ok := req.Header[HeaderStream]; !ok {
+		if _, ok := req.Header[headerStream]; !ok {
 			w.WriteHeader(http.StatusBadRequest)
 			enc.Encode(&response{
-				ErrBadRequest, 0,
+				errBadRequest, 0,
 			})
-			log.Println(ErrBadRequest)
+			log.Println(errBadRequest)
 			return
 		}
 
@@ -78,7 +78,7 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusOK)
 		enc.Encode(&response{
-			Success, rn,
+			success, rn,
 		})
 
 		wg.Done()

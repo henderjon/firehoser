@@ -28,9 +28,9 @@ func sock(out io.Writer, port string) {
 		// graceful shutdown does not accept new connections
 		if isShutdownMode() {
 			conn.Write((&response{
-				ErrShutdown, 0,
+				errShutdown, 0,
 			}).Bytes())
-			log.Println(ErrShutdown)
+			log.Println(errShutdown)
 			return
 		}
 
@@ -63,7 +63,7 @@ func handleSock(conn net.Conn, out io.Writer) {
 		}
 
 		conn.Write((&response{
-			Success, n,
+			success, n,
 		}).Bytes())
 
 		// let current connections finish writing
