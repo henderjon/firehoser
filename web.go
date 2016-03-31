@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"log"
 	"io"
+	"log"
 	"net/http"
 )
 

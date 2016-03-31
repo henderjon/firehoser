@@ -9,20 +9,24 @@ import (
 	"time"
 )
 
-// shutdown marks that the application is in shutdown mode.
-var shutdownSig int32
-var brokenPipeSig int32
+var (
+	shutdownSig   int32 // atomically signal shutdow
+	brokenPipeSig int32 // atomically signal a broken pipe
+)
 
+// isShutdownMode checks to see if we're shutting down
 func isShutdownMode() bool {
 	s := atomic.LoadInt32(&shutdownSig)
 	return s != 0
 }
 
+// isBrokenPipe checks to see if we've suffered a broken pipe
 func isBrokenPipe() bool {
 	s := atomic.LoadInt32(&brokenPipeSig)
 	return s != 0
 }
 
+// initShutdownWatcher turn on our signal watching goroutine
 func initShutdownWatcher() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

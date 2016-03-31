@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// close the net.Conn after 3 idle seconds
 var timeout = 3 * time.Second
 
 // was ripped from the examples as a TCP listener
@@ -68,7 +69,7 @@ func handleSock(conn net.Conn, out io.Writer) {
 		// let current connections finish writing
 		// if isShutdownMode() { conn.Close() }
 
-		// if nothing is happening, close the connection
+		// @TODO if nothing is happening, close the connection?
 		conn.SetDeadline(time.Now().Add(timeout))
 
 	}
