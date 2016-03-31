@@ -12,12 +12,12 @@ const (
 // defines the properties of a response
 type response struct {
 	Message  string
-	Recieved int
+	Received int
 }
 
 // returns the response as a TSV string
 func (r response) String() string {
-	return fmt.Sprintf("message\t%s\tbytes_received\t%d\n", r.Message, r.Recieved)
+	return fmt.Sprintf("Message\t%s\tReceived\t%d\n", r.Message, r.Received)
 }
 
 // returns the []bytes version of the TSV string

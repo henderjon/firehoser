@@ -39,6 +39,7 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 
 		// if we get here, don't let the program goroutine die before the goroutine finishes
 		wg.Add(1)
+		defer wg.Done() // cover the short-circuit returns
 
 		// ensure a POST
 		if req.Method != methodPost {
@@ -82,7 +83,6 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 			success, rn,
 		})
 		req.Body.Close()
-		wg.Done()
 		return
 	}
 }
