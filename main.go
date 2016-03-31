@@ -8,14 +8,10 @@ import (
 	"sync"
 )
 
-const (
-	errUnknownProtocol = "err: 'protocol' must be either 'http' or 'tcp'"
-)
-
 var (
 	out            io.Writer      // where to write the output
 	wg             sync.WaitGroup // ensure that our goroutines finish before shut down
-	protocol       string         // http or tcp
+	tcp            bool           // use tcp as opposed to http
 	port           string         // the port on which to listen
 	forceStdout    bool           // skip disk io and allow output redirection
 	splitLineCount int            // how many lines per log file
@@ -27,7 +23,7 @@ var (
 func init() {
 
 	flag.StringVar(&port, "port", "8080", "The port used for the server.")
-	flag.StringVar(&protocol, "protocol", "http", "The protocol used for the server.")
+	flag.BoolVar(&tcp, "tcp", false, "Use TCP as opposed to (the default) HTTP.")
 	flag.BoolVar(&forceStdout, "c", false, "Send output to stdout and not disk also disregards -l, -b, and -prefix.")
 	flag.IntVar(&splitLineCount, "l", 5000, "The number of lines at which to split the log files. A zero (0) will disable splitting by lines.")
 	flag.IntVar(&splitByteCount, "b", 0, "The number of bytes at which to split the log files. A zero (0) will disable splitting by bytes.")
@@ -37,7 +33,7 @@ func init() {
 
 	if help {
 		qLog := log.New(os.Stderr, "", 0)
-		qLog.Println("\nOmnilogger is an HTTP or TCP server that coalesces log data (line by line) from multiple sources to a common destination (defaults to consecutively named log files of ~5000 lines).\n")
+		qLog.Println("\nOmnilogger is an HTTP (or TCP) server that coalesces log data (line by line) from multiple sources to a common destination (defaults to consecutively named log files of ~5000 lines).\n")
 		flag.PrintDefaults()
 		qLog.Println("\n")
 		os.Exit(0)
@@ -54,13 +50,9 @@ func main() {
 		out = getDest(ioFile)
 	}
 
-	switch protocol {
-	case "http":
-		web(out, port)
-	case "tcp":
+	if tcp {
 		sock(out, port)
-	default:
-		log.Fatalln(errUnknownProtocol)
-		os.Exit(1)
+	} else {
+		web(out, port)
 	}
 }
