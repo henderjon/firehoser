@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"io"
 	"log"
 	"net"
 	"time"
@@ -10,7 +11,7 @@ import (
 var timeout = 3 * time.Second
 
 // was ripped from the examples as a TCP listener
-func sock(out *log.Logger, port string) {
+func sock(out io.Writer, port string) {
 	l, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatal(err)
@@ -40,19 +41,20 @@ func sock(out *log.Logger, port string) {
 }
 
 // scans the incoming data from the connection and writes it to stdout
-func handleSock(conn net.Conn, out *log.Logger) {
+func handleSock(conn net.Conn, out io.Writer) {
 
 	// if we get here, don't let the program goroutine die before the goroutine finishes
 	wg.Add(1)
 
+	n := 0
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 
 		if isBrokenPipe() {
-			out = getSwapFile()
+			out = getDest(ioFile)
 		}
 
-		out.Println(scanner.Text())
+		n, _ = out.Write(scanner.Bytes())
 
 		if err := scanner.Err(); err != nil {
 			log.Println(err.Error())
@@ -60,7 +62,7 @@ func handleSock(conn net.Conn, out *log.Logger) {
 		}
 
 		conn.Write((&response{
-			Success, len(scanner.Text()),
+			Success, n,
 		}).Bytes())
 
 		// let current connections finish writing

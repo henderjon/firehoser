@@ -12,7 +12,6 @@ import (
 // shutdown marks that the application is in shutdown mode.
 var shutdownSig int32
 var brokenPipeSig int32
-var swapFile *log.Logger
 
 func isShutdownMode() bool {
 	s := atomic.LoadInt32(&shutdownSig)
@@ -32,7 +31,7 @@ func initShutdownWatcher() {
 
 	go func() {
 		sig := <-c
-		log.Printf("\n!Caught signal %d; shutting down; flushing to disk\n", sig)
+		log.Printf("\t!Caught signal '%d: %s'; shutting down;\n", sig, sig.String())
 
 		if sig == syscall.SIGPIPE {
 			// atomicly indicate we are in shutdown mode.
@@ -44,23 +43,7 @@ func initShutdownWatcher() {
 
 		wg.Wait()
 
-		log.Println("... fin")
+		log.Println("... finished at", time.Now().Format(time.RFC3339))
 		os.Exit(1)
-
 	}()
-}
-
-func getSwapFile() *log.Logger {
-	if swapFile != nil {
-		return swapFile
-	}
-
-	fn := time.Now().Format("2006-01-02T15.04.05Z0700.omnilog.swp")
-	f, err := os.Create(fn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	swapFile = log.New(f, "", 0)
-	// swapFile = log.New(os.Stderr, "", 0)
-	return swapFile
 }

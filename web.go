@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"log"
+	"io"
 	"net/http"
 )
 
@@ -13,7 +14,7 @@ const HeaderStream = "X-Omnilog-Stream"
 const MethodPost = "POST"
 
 // run a small web server
-func web(out *log.Logger, port string) {
+func web(out io.Writer, port string) {
 	http.HandleFunc("/", handleWeb(out))
 	http.ListenAndServe(":"+port, nil)
 }
@@ -21,7 +22,7 @@ func web(out *log.Logger, port string) {
 // scans the body of the POST request and writes each line. Currently prepends
 // the stream name (from the request header) to each line. This feature is less
 // useful each passing minute.
-func handleWeb(out *log.Logger) http.HandlerFunc {
+func handleWeb(out io.Writer) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		enc := json.NewEncoder(w)
 
@@ -64,11 +65,11 @@ func handleWeb(out *log.Logger) http.HandlerFunc {
 		for scanner.Scan() {
 
 			if isBrokenPipe() {
-				out = getSwapFile()
+				out = getDest(ioFile)
 			}
 
-			out.Println(scanner.Text())
-			rn += len(scanner.Text())
+			n, _ := out.Write(scanner.Bytes())
+			rn += n
 
 			if err := scanner.Err(); err != nil {
 				break
