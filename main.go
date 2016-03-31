@@ -13,22 +13,30 @@ const (
 )
 
 var (
-	out            io.Writer
-	protocol, port string
-	help           bool
-	wg             sync.WaitGroup
+	out            io.Writer      // where to write the output
+	wg             sync.WaitGroup // ensure that our goroutines finish before shut down
+	protocol       string         // http or tcp
+	port           string         // the port on which to listen
+	forceStdout    bool           // skip disk io and allow output redirection
+	splitLineCount int            // how many lines per log file
+	splitByteCount int            // how many bytes per log file
+	splitPrefix    string         // the prefix for the log file(s) name
+	help           bool           // I forgot my options
 )
 
 func init() {
 
-	flag.StringVar(&port, "port", "8080", "the port used for the server")
-	flag.StringVar(&protocol, "protocol", "http", "the protocol used for the server")
-	flag.BoolVar(&help, "h", false, "show this message")
-	flag.BoolVar(&help, "h", false, "show this message")
-
+	flag.StringVar(&port, "port", "8080", "The port used for the server.")
+	flag.StringVar(&protocol, "protocol", "http", "The protocol used for the server.")
+	flag.BoolVar(&forceStdout, "c", false, "Send output to stdout and not disk also disregards -l, -b, and -prefix.")
+	flag.IntVar(&splitLineCount, "l", 5000, "The number of lines at which to split the log files. A zero (0) will disable splitting by lines.")
+	flag.IntVar(&splitByteCount, "b", 0, "The number of bytes at which to split the log files. A zero (0) will disable splitting by bytes.")
+	flag.StringVar(&splitPrefix, "prefix", "", "The prefix to use for log files.")
+	flag.BoolVar(&help, "h", false, "Show this message.")
 	flag.Parse()
 
 	if help {
+		log.Println("Omnilogger is an HTTP or TCP server that coalesces log data (line by line) from multiple sources to a common destination (defaults to consecutively named log files of ~5000 lines).")
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
@@ -38,7 +46,11 @@ func init() {
 
 func main() {
 
-	out = getDest(ioFile)
+	if forceStdout {
+		out = getDest(ioStdout)
+	} else {
+		out = getDest(ioFile)
+	}
 
 	switch protocol {
 	case "http":
