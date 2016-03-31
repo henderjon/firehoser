@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	Kilobyte  = 1024
-	Megabyte  = 1024 * 1024
+	Kilobyte  = 1024        // const for specifying ByteLimit
+	Megabyte  = 1024 * 1024 // const for specifying ByteLimit
 	formatStr = "2006-01-02T15.04.05.999999999Z0700.log"
 )
 
