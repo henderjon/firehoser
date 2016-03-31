@@ -24,6 +24,7 @@ func web(out io.Writer, port string) {
 // useful each passing minute.
 func handleWeb(out io.Writer) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		defer req.Body.Close()
 		enc := json.NewEncoder(w)
 
 		// graceful shutdown, reject new requests
@@ -80,7 +81,8 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 		enc.Encode(&response{
 			success, rn,
 		})
-
+		req.Body.Close()
 		wg.Done()
+		return
 	}
 }

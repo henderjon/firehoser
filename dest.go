@@ -1,7 +1,7 @@
 package main
 
 import (
-	ws "github.com/capdig/omnilogger/writesplitter"
+	ws "github.com/henderjon/omnilogger/writesplitter"
 	"io"
 	"log"
 	"os"

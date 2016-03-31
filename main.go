@@ -36,8 +36,10 @@ func init() {
 	flag.Parse()
 
 	if help {
-		log.Println("Omnilogger is an HTTP or TCP server that coalesces log data (line by line) from multiple sources to a common destination (defaults to consecutively named log files of ~5000 lines).")
+		qLog := log.New(os.Stderr, "", 0)
+		qLog.Println("\nOmnilogger is an HTTP or TCP server that coalesces log data (line by line) from multiple sources to a common destination (defaults to consecutively named log files of ~5000 lines).\n")
 		flag.PrintDefaults()
+		qLog.Println("\n")
 		os.Exit(0)
 	}
 
