@@ -35,12 +35,10 @@ func init() {
 	testFileIO()
 }
 
-// Close is a passthru and satisfies io.Closer
+// Close is a passthru and satisfies io.Closer. Subsequent writes will return an
+// error.
 func (ws *WriteSplitter) Close() error {
-	err := ws.handle.Close()
-	// @TODO, should I really allow more writes?
-	ws.handle = nil
-	return err
+	return ws.handle.Close()
 }
 
 // Write satisfies io.Writer and internally manages file io. Write also limits
