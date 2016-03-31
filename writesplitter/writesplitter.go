@@ -12,13 +12,16 @@ const (
 	formatStr = "2006-01-02T15.04.05.999999999Z0700.log"
 )
 
-// WriteSplitter represents a disk bound io.WriteCloser that splits the input across
-// multiple files based on either the number of bytes of the number of lines.
-// Splitting does not guarantee true byte/line split precision as it does not
-// parse the incoming data. The decision to split is before the underlying write
-// operation based on the previous invocation. If both LineLimit and ByteLimit
-// is set, preference is given to LineLimit. By default, no splitting occurs because
-// both LineLimit and ByteLimit are zero.
+// WriteSplitter represents a disk bound io.WriteCloser that splits the input
+// across multiple files based on either the number of bytes or the number of
+// lines. Splitting does not guarantee true byte/line split precision as it does
+// not parse the incoming data. The decision to split is before the underlying
+// write operation based on the previous invocation. In other words, if a []byte
+// sent to `Write()` contains enough bytes or new lines ('\n') to exceed the
+// given limit, a new file won't be generated until the *next* invocation of
+// `Write()`. If both LineLimit and ByteLimit is set, preference is given to
+// LineLimit. By default, no splitting occurs because both LineLimit and
+// ByteLimit are zero.
 type WriteSplitter struct {
 	LineLimit int      // how many write ops (typically one per line) before splitting the file
 	ByteLimit int      // how many bytes before splitting the file
