@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	// "log"
 	"os"
 	"os/signal"
 	"sync/atomic"
@@ -35,7 +35,7 @@ func initShutdownWatcher() {
 
 	go func() {
 		sig := <-c
-		log.Printf("\t!Caught signal '%d: %s'; shutting down;\n", sig, sig.String())
+		bareLog.Printf("\n!Caught signal '%d: %s'; shutting down...\n", sig, sig.String())
 
 		if sig == syscall.SIGPIPE {
 			// atomicly indicate we are in shutdown mode.
@@ -47,7 +47,7 @@ func initShutdownWatcher() {
 
 		wg.Wait()
 
-		log.Println("... finished at", time.Now().Format(time.RFC3339))
+		bareLog.Printf("\nshutdown finished at %s\n", time.Now().Format(time.RFC3339))
 		os.Exit(1)
 	}()
 }
