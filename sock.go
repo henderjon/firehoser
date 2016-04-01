@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"time"
+	"net/http"
 )
 
 // close the net.Conn after 3 idle seconds
@@ -28,7 +29,7 @@ func sock(out io.Writer, port string) {
 		// graceful shutdown does not accept new connections
 		if isShutdownMode() {
 			conn.Write((&response{
-				errShutdown, 0,
+				http.StatusServiceUnavailable, errShutdown, 0,
 			}).Bytes())
 			log.Println(errShutdown)
 			return
@@ -63,7 +64,7 @@ func handleSock(conn net.Conn, out io.Writer) {
 		}
 
 		conn.Write((&response{
-			success, n,
+			http.StatusOK, success, n,
 		}).Bytes())
 
 		// let current connections finish writing

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
-	// "log"
 	"net/http"
 )
 
@@ -34,9 +33,8 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 		if isShutdownMode() {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			enc.Encode(&response{
-				errShutdown, 0,
+				http.StatusServiceUnavailable, errShutdown, 0,
 			})
-			// log.Println(errShutdown)
 			return
 		}
 
@@ -48,9 +46,8 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 		if req.Method != methodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			enc.Encode(&response{
-				errMethodNotAllowed, 0,
+				http.StatusMethodNotAllowed, errMethodNotAllowed, 0,
 			})
-			// log.Println(errMethodNotAllowed)
 			return
 		}
 
@@ -58,9 +55,8 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 		if _, ok := req.Header[customHeader]; !ok {
 			w.WriteHeader(http.StatusBadRequest)
 			enc.Encode(&response{
-				errBadRequest, 0,
+				http.StatusBadRequest, errBadRequest, 0,
 			})
-			// log.Println(errBadRequest)
 			return
 		}
 
@@ -68,9 +64,8 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 		if !checkAuth(req.Header) {
 			w.WriteHeader(http.StatusForbidden)
 			enc.Encode(&response{
-				errForbidden, 0,
+				http.StatusForbidden, errForbidden, 0,
 			})
-			// log.Println(errForbidden)
 			return
 		}
 
@@ -93,7 +88,7 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusOK)
 		enc.Encode(&response{
-			success, rn,
+			http.StatusOK, success, rn,
 		})
 		req.Body.Close()
 		return
