@@ -4,14 +4,17 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
-	"log"
+	// "log"
 	"net/http"
 )
 
 // A custom header previously used to name the stream(s) to prepend to the line
 // data. This isn't very useful yet
-const headerStream = "X-Omnilog-Stream"
-const methodPost = "POST"
+const (
+	customHeader = "X-Omnilog-Stream"
+	methodPost   = "POST"
+	// authHeader   = "Authorization: Bearer "
+)
 
 // run a small web server
 func web(out io.Writer, port string) {
@@ -33,7 +36,7 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 			enc.Encode(&response{
 				errShutdown, 0,
 			})
-			log.Println(errShutdown)
+			// log.Println(errShutdown)
 			return
 		}
 
@@ -47,17 +50,27 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 			enc.Encode(&response{
 				errMethodNotAllowed, 0,
 			})
-			log.Println(errMethodNotAllowed)
+			// log.Println(errMethodNotAllowed)
 			return
 		}
 
 		// must have custom header (@TODO future validation?)
-		if _, ok := req.Header[headerStream]; !ok {
+		if _, ok := req.Header[customHeader]; !ok {
 			w.WriteHeader(http.StatusBadRequest)
 			enc.Encode(&response{
 				errBadRequest, 0,
 			})
-			log.Println(errBadRequest)
+			// log.Println(errBadRequest)
+			return
+		}
+
+		// check if the Authorization header matches the provided password
+		if !checkAuth(req.Header) {
+			w.WriteHeader(http.StatusForbidden)
+			enc.Encode(&response{
+				errForbidden, 0,
+			})
+			// log.Println(errForbidden)
 			return
 		}
 
@@ -85,4 +98,31 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 		req.Body.Close()
 		return
 	}
+}
+
+func checkAuth(h http.Header) bool {
+
+	// if no password was given to the server, leave the doors wide open
+	if pswd == "" {
+		return true
+	}
+
+	// make sure the header exists
+	a, ok := h["Authorization"]
+	if !ok {
+		return false
+	}
+
+	// go returns a map, so loop over it
+	for _, v := range a {
+		// Bearer
+		if len(v) < 7 {
+			continue
+		}
+		if v[7:] == pswd {
+			return true
+		}
+	}
+
+	return false
 }

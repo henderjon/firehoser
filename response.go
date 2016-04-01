@@ -7,6 +7,7 @@ const (
 	errShutdown         = "err: server is shutting down"
 	errBadRequest       = "err: missing header"
 	errMethodNotAllowed = "err: method not allowed"
+	errForbidden        = "err: forbidden"
 )
 
 // defines the properties of a response
