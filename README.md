@@ -25,6 +25,7 @@ storage facility--something like AWS S3.
   - The default HTTP server is better than the TCP server.
   - If you use the TCP server, idle connections are closed after 3 seconds.
   - The sub-library `writesplitter` is useful on it's own, and has it's own [README.md](writesplitter/README.md).
+  - All HTTP requests must be a POST, but the body is not parsed (e.g. form-encoded data will get logged as is)
   - All HTTP requests have to send a custom header ('X-Omnilog-Stream'). As of now
     it only checks to see if it's there. In the future it **might** use this header
     to divert data to separate destinations.
