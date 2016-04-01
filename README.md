@@ -20,4 +20,13 @@ log data from many different EC2 instances being auto-scaled.
 Potentially, yes. I'd recommend a cron job that rotates logs to a long-term
 storage facility--something like AWS S3.
 
+### Is there anything else I ought to know?
+
+  - The default HTTP server is better than the TCP server.
+  - If you use the TCP server, idle connections are closed after 3 seconds.
+  - The sub-library `writesplitter` is useful on it's own, and has it's own [README.md](writesplitter/README.md).
+  - All HTTP requests have to send a custom header ('X-Omnilog-Stream'). As of now
+    it only checks to see if it's there. In the future it **might** use this header
+    to divert data to separate destinations.
+
 
