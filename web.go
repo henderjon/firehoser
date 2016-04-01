@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"io"
 	"net/http"
 )
@@ -12,7 +11,6 @@ import (
 const (
 	customHeader = "X-Omnilog-Stream"
 	methodPost   = "POST"
-	// authHeader   = "Authorization: Bearer "
 )
 
 // run a small web server
@@ -27,14 +25,12 @@ func web(out io.Writer, port string) {
 func handleWeb(out io.Writer) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
-		enc := json.NewEncoder(w)
+
+		s := http.StatusServiceUnavailable
 
 		// graceful shutdown, reject new requests
 		if isShutdownMode() {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			enc.Encode(&response{
-				http.StatusServiceUnavailable, errShutdown, 0,
-			})
+			http.Error(w, (newResponse(s, 0)).Json(), s)
 			return
 		}
 
@@ -42,30 +38,25 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 		wg.Add(1)
 		defer wg.Done() // cover the short-circuit returns
 
+		s = http.StatusOK
+
 		// ensure a POST
 		if req.Method != methodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			enc.Encode(&response{
-				http.StatusMethodNotAllowed, errMethodNotAllowed, 0,
-			})
-			return
+			s = http.StatusMethodNotAllowed
 		}
 
 		// must have custom header (@TODO future validation?)
 		if _, ok := req.Header[customHeader]; !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			enc.Encode(&response{
-				http.StatusBadRequest, errBadRequest, 0,
-			})
-			return
+			s = http.StatusBadRequest
 		}
 
 		// check if the Authorization header matches the provided password
 		if !checkAuth(req.Header) {
-			w.WriteHeader(http.StatusForbidden)
-			enc.Encode(&response{
-				http.StatusForbidden, errForbidden, 0,
-			})
+			s = http.StatusForbidden
+		}
+
+		if s != http.StatusOK {
+			http.Error(w, (newResponse(s, 0)).Json(), s)
 			return
 		}
 
@@ -86,15 +77,11 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 			}
 		}
 
-		w.WriteHeader(http.StatusOK)
-		enc.Encode(&response{
-			http.StatusOK, success, rn,
-		})
-		req.Body.Close()
-		return
+		http.Error(w, (newResponse(s, rn)).Json(), s)
 	}
 }
 
+// check the reqeust headers for the Authorization header (e.g. 'Authorization: Bearer this-is-a-string')
 func checkAuth(h http.Header) bool {
 
 	// if no password was given to the server, leave the doors wide open

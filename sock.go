@@ -28,10 +28,7 @@ func sock(out io.Writer, port string) {
 
 		// graceful shutdown does not accept new connections
 		if isShutdownMode() {
-			conn.Write((&response{
-				http.StatusServiceUnavailable, errShutdown, 0,
-			}).Bytes())
-			log.Println(errShutdown)
+			conn.Write((newResponse(http.StatusServiceUnavailable, 0)).Bytes())
 			return
 		}
 
@@ -63,16 +60,13 @@ func handleSock(conn net.Conn, out io.Writer) {
 			break
 		}
 
-		conn.Write((&response{
-			http.StatusOK, success, n,
-		}).Bytes())
+		conn.Write((newResponse(http.StatusOK, n)).Bytes())
 
 		// let current connections finish writing
 		// if isShutdownMode() { conn.Close() }
 
 		// @TODO if nothing is happening, close the connection?
 		conn.SetDeadline(time.Now().Add(timeout))
-
 	}
 
 	wg.Done()
