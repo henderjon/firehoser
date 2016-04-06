@@ -17,15 +17,20 @@ type destination struct {
 	*log.Logger
 }
 
-// Write Satisfies io.Writer but guaruntees atomicity via log
+// Write Satisfies io.WriteCloser but guaruntees atomicity via log
 func (d *destination) Write(s []byte) (int, error) {
 	d.Println(string(s))
 	return len(s), nil
 }
 
+// Write Satisfies io.WriteCloser but guaruntees atomicity via log
+func (d *destination) Close() error {
+	return d.Close()
+}
+
 // getDest is a factory for various log destinations.
-func getDest(t int) io.Writer {
-	var writer io.Writer
+func getDest(t int) io.WriteCloser {
+	var writer io.WriteCloser
 	switch {
 	case t == ioFile:
 		writer = &ws.WriteSplitter{

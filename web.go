@@ -13,12 +13,6 @@ const (
 	methodPost   = "POST"
 )
 
-// run a small web server
-func web(out io.Writer, port string) {
-	http.HandleFunc("/", handleWeb(out))
-	http.ListenAndServe(":"+port, nil)
-}
-
 // scans the body of the POST request and writes each line. Currently prepends
 // the stream name (from the request header) to each line. This feature is less
 // useful each passing minute.

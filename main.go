@@ -6,12 +6,12 @@ import (
 	"log"
 	"os"
 	"sync"
+	"net/http"
 )
 
 var (
 	out            io.Writer      // where to write the output
 	wg             sync.WaitGroup // ensure that our goroutines finish before shut down
-	tcp            bool           // use tcp as opposed to http
 	port           string         // the port on which to listen
 	pswd           string         // a simple means of authentication
 	forceStdout    bool           // skip disk io and allow output redirection
@@ -26,7 +26,6 @@ func init() {
 
 	flag.StringVar(&port, "port", "8080", "The port used for the server.")
 	flag.StringVar(&pswd, "auth", "", "If not empty, this is matched against the Authorization header (e.g. Authorization: Bearer my-password).")
-	flag.BoolVar(&tcp, "tcp", false, "Use TCP as opposed to (the default) HTTP also disregards -auth.")
 	flag.BoolVar(&forceStdout, "c", false, "Send output to stdout and not disk also disregards -l, -b, and -prefix.")
 	flag.IntVar(&splitLineCount, "l", 5000, "The number of lines at which to split the log files. A zero (0) will disable splitting by lines.")
 	flag.IntVar(&splitByteCount, "b", 0, "The number of bytes at which to split the log files. A zero (0) will disable splitting by bytes.")
@@ -55,9 +54,7 @@ func main() {
 		out = getDest(ioFile)
 	}
 
-	if tcp {
-		sock(out, port)
-	} else {
-		web(out, port)
-	}
+	http.HandleFunc("/", handleWeb(out))
+	http.ListenAndServe(":"+port, nil)
+
 }
