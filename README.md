@@ -42,4 +42,7 @@ the default text related to a given [HTTP status code](https://golang.org/pkg/ne
   - 405 (Method Not Allowed) means your HTTP method was something other than POST (*tsk tsk*).
   - 503 (Service Unavailable) means the system is shutting down.
 
+## todo
 
+  - time expiration (file close/reopen)
+  - stream splitting (based on header)

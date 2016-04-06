@@ -39,7 +39,7 @@ func handleWeb(out io.Writer) http.HandlerFunc {
 			s = http.StatusMethodNotAllowed
 		}
 
-		// must have custom header (@TODO future validation?)
+		// must have custom header (@TODO future stream separation?)
 		if _, ok := req.Header[customHeader]; !ok {
 			s = http.StatusBadRequest
 		}

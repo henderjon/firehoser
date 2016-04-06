@@ -23,12 +23,13 @@ const (
 // preference is given to LineLimit. By default, no splitting occurs because
 // both LineLimit and ByteLimit are zero (0).
 type WriteSplitter struct {
-	LineLimit int      // how many write ops (typically one per line) before splitting the file
-	ByteLimit int      // how many bytes before splitting the file
-	Prefix    string   // files are named "Prefix + nano-precision-timestamp.log"
-	numBytes  int      // internal byte count
-	numLines  int      // internal line count
-	handle    *os.File // embedded file
+	LineLimit int       // how many write ops (typically one per line) before splitting the file
+	ByteLimit int       // how many bytes before splitting the file
+	Prefix    string    // files are named "Prefix + nano-precision-timestamp.log"
+	Created   time.Time // track when this WriteSplitter was born
+	numBytes  int       // internal byte count
+	numLines  int       // internal line count
+	handle    *os.File  // embedded file
 }
 
 func init() {

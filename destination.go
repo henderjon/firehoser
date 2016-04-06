@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 )
 
 const (
@@ -19,7 +20,7 @@ type destination struct {
 
 // Write Satisfies io.WriteCloser but guaruntees atomicity via log
 func (d *destination) Write(s []byte) (int, error) {
-	d.Println(string(s))
+	d.Println(string(s)) // @TODO handle write errors
 	return len(s), nil
 }
 
@@ -37,6 +38,7 @@ func getDest(t int) io.WriteCloser {
 			LineLimit: splitLineCount,
 			ByteLimit: splitByteCount,
 			Prefix:    splitPrefix,
+			Created:   time.Now(),
 		}
 	case t == ioStderr:
 		writer = os.Stderr
