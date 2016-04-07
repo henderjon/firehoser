@@ -5,13 +5,11 @@ import (
 	"io"
 	"log"
 	"os"
-	"sync"
 	"net/http"
 )
 
 var (
 	out            io.Writer      // where to write the output
-	wg             sync.WaitGroup // ensure that our goroutines finish before shut down
 	port           string         // the port on which to listen
 	pswd           string         // a simple means of authentication
 	forceStdout    bool           // skip disk io and allow output redirection
