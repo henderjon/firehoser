@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	out            io.Writer      // where to write the output
+	// out            io.Writer      // where to write the output
 	port           string         // the port on which to listen
 	pswd           string         // a simple means of authentication
 	forceStdout    bool           // skip disk io and allow output redirection
@@ -45,14 +45,14 @@ func init() {
 }
 
 func main() {
-
+	var out io.Writer
 	if forceStdout {
 		out = getDest(ioStdout)
 	} else {
 		out = getDest(ioFile)
 	}
 
-	http.HandleFunc("/", handleWeb(out))
+	http.Handle("/", Adapt(parseRequest(out), checkShutdown(), ensurePost(), checkAuth(), parseCustomHeader))
 	http.ListenAndServe(":"+port, nil)
 
 }
