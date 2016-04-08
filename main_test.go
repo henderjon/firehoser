@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestCoalesce(t *testing.T) {
@@ -33,6 +34,8 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 	req.Body.Close()
 
 	wg.Wait()
+
+	time.Sleep(5 * time.Second)
 
 	expected := 416 // 415 + the last newline added by coalesce()
 	if b.Len() != expected {
