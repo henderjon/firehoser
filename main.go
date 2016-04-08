@@ -53,7 +53,8 @@ func main() {
 
 	go coalesce(ch, wr)
 
-	http.Handle("/", Adapt(parseRequest(ch), checkShutdown(), ensurePost(), checkAuth(), parseCustomHeader))
+	// adapters are closures and therefore executed in reverse order
+	http.Handle("/", Adapt(parseRequest(ch), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown()))
 	http.ListenAndServe(":"+port, nil)
 
 }

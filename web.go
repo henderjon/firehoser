@@ -2,32 +2,32 @@ package main
 
 import (
 	"bufio"
-	// "io"
 	"net/http"
 	"sync"
 )
 
-// A custom header previously used to name the stream(s) to prepend to the line
-// data. This isn't very useful yet
 const (
-	customHeader = "X-Omnilog-Stream"
-	methodPost   = "POST"
+	customHeader = "X-Omnilog-Stream" // a custom header to validate intent
+	methodPost   = "POST"             // because http doesn't have this ...
 )
 
 var (
 	wg sync.WaitGroup // ensure that our goroutines finish before shut down
 )
 
-// defines a decorator that takes a handler and returns a handler. These functions
-// take a handler and return a handler. The returned handler does something before
-// calling the handler that was passed in. In this way, small pieces of logic can
-// broken into functions that are essentially chained together. Casting the returned
-// closure to http.HandlerFunc() allow a homogenious interface.
+// Adapter is a decorator that takes a handler and returns a handler.  The
+// returned handler does something before calling the handler that was passed in.
+// In this way, small pieces of logic can broken into functions that are
+// essentially chained together. Casting the returned closures to
+// http.HandlerFunc() allows each to satisfy http.Handler. Below, most of the adapters
+// are closures themselves. This isn't *necessary* in this instance, but would be
+// if they needed to receive/wrap arguments.
 type Adapter func(http.Handler) http.Handler
 
-// Adapt takes all of our adapters and runs them in order. The passed handler is
+// Adapt takes a group of adapters and runs them in order. The passed handler is
 // decorated in each step allowing small pieces of logic to be chained together
-// and wrapped around the base handler.
+// and wrapped around the base handler. Because they are closures the end up
+// executing in the reverse order of how they were passed in.
 func Adapt(h http.Handler, adapters ...Adapter) http.Handler {
 	for _, adapter := range adapters {
 		h = adapter(h)
@@ -67,7 +67,7 @@ func ensurePost() Adapter {
 	}
 }
 
-// checkAuth takes a handler and returns a handler that checks the reqeust headers
+// checkAuth takes a handler and returns a handler that checks the request headers
 // for the Authorization header (e.g. 'Authorization: Bearer this-is-a-string')
 // and makes sure it matches the given password (if applicable) before calling the
 // passed handler
@@ -146,4 +146,3 @@ func parseRequest(ch chan []byte) http.Handler {
 		http.Error(rw, (newResponse(s, rn)).Json(), s)
 	})
 }
-

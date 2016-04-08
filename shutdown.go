@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	shutdownSig   int32 // atomically signal shutdow
+	shutdownSig   int32 // atomically signal shutdown
 )
 
 // isShutdownMode checks to see if we're shutting down
@@ -33,7 +33,7 @@ func initShutdownWatcher() {
 		sig := <-c
 		bareLog.Printf("\n!Caught signal '%d: %s'; shutting down...\n", sig, sig.String())
 
-		// atomicly indicate we are in shutdown mode.
+		// atomically indicate we are in shutdown mode.
 		signalShutdown()
 
 		wg.Wait()

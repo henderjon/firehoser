@@ -4,7 +4,6 @@ import (
 	ws "github.com/henderjon/omnilogger/writesplitter"
 	"io"
 	"os"
-	"time"
 )
 
 const (
@@ -13,16 +12,15 @@ const (
 	ioStderr
 )
 
-// getDest is a factory for various log destinations.
+// newWriteCloser is a factory for various io.WriteClosers.
 func newWriteCloser(t int) io.WriteCloser {
 	var writer io.WriteCloser
 	switch {
 	case t == ioFile:
-		writer = &ws.WriteSplitter{
-			LineLimit: splitLineCount,
-			ByteLimit: splitByteCount,
-			Prefix:    splitPrefix,
-			Created:   time.Now(),
+		if splitByteCount > 0 {
+			writer = ws.ByteSplitter(splitByteCount, splitPrefix)
+		}else{
+			writer = ws.LineSplitter(splitLineCount, splitPrefix)
 		}
 	case t == ioStderr:
 		writer = os.Stderr
