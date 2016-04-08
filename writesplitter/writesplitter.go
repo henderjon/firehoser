@@ -1,9 +1,9 @@
 package writesplitter
 
 import (
+	"io"
 	"log"
 	"os"
-	"io"
 	"time"
 )
 
@@ -24,13 +24,12 @@ const (
 // preference is given to LineLimit. By default, no splitting occurs because
 // both LineLimit and ByteLimit are zero (0).
 type WriteSplitter struct {
-	LineLimit int       // how many write ops (typically one per line) before splitting the file
-	ByteLimit int       // how many bytes before splitting the file
-	Prefix    string    // files are named "Prefix + nano-precision-timestamp.log"
-	// Created   time.Time // track when this WriteSplitter was born
-	numBytes  int       // internal byte count
-	numLines  int       // internal line count
-	handle    *os.File  // embedded file
+	LineLimit int            // how many write ops (typically one per line) before splitting the file
+	ByteLimit int            // how many bytes before splitting the file
+	Prefix    string         // files are named "Prefix + nano-precision-timestamp.log"
+	numBytes  int            // internal byte count
+	numLines  int            // internal line count
+	handle    io.WriteCloser // embedded file
 }
 
 // LineSplitter returns a WriteSplitter set to split at the given number of lines
@@ -57,10 +56,11 @@ func (ws *WriteSplitter) Close() error {
 // each WriteSplitter to only one open file at a time.
 func (ws *WriteSplitter) Write(p []byte) (int, error) {
 
-	var err error
+	var n int
+	var e error
 
 	if ws.handle == nil {
-		ws.handle, err = newFile(ws.Prefix)
+		ws.handle, e = newFile(ws.Prefix)
 	}
 
 	switch {
@@ -68,22 +68,22 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 		fallthrough
 	case ws.ByteLimit > 0 && ws.numBytes >= ws.ByteLimit:
 		ws.Close()
-		ws.handle, err = newFile(ws.Prefix)
+		ws.handle, e = newFile(ws.Prefix)
 		ws.numLines, ws.numBytes = 0, 0
 	}
 
-	if err != nil {
-		return 0, nil
+	if e != nil {
+		return 0, e
 	}
 
-	n, err := ws.handle.Write(p)
+	n, e = ws.handle.Write(p)
 	ws.numLines += 1
 	ws.numBytes += n
-	return n, err
+	return n, e
 }
 
 // newFile creates a new file with the given prefix
-func newFile(prefix string) (*os.File, error) {
+func newFile(prefix string) (io.WriteCloser, error) {
 	fn := prefix + time.Now().Format(formatStr)
 	return os.Create(fn)
 }
@@ -93,7 +93,7 @@ func testFileIO() {
 	fn := "test.tmp"
 	_, err := os.Create(fn)
 	if err != nil {
-		log.Fatal("WriteSplitter cannot write files to this location")
+		log.Fatal(err)
 	}
 	os.Remove(fn)
 }
