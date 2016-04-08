@@ -3,6 +3,7 @@ package writesplitter
 import (
 	"log"
 	"os"
+	"io"
 	"time"
 )
 
@@ -26,10 +27,20 @@ type WriteSplitter struct {
 	LineLimit int       // how many write ops (typically one per line) before splitting the file
 	ByteLimit int       // how many bytes before splitting the file
 	Prefix    string    // files are named "Prefix + nano-precision-timestamp.log"
-	Created   time.Time // track when this WriteSplitter was born
+	// Created   time.Time // track when this WriteSplitter was born
 	numBytes  int       // internal byte count
 	numLines  int       // internal line count
 	handle    *os.File  // embedded file
+}
+
+// LineSplitter returns a WriteSplitter set to split at the given number of lines
+func LineSplitter(limit int, prefix string) io.WriteCloser {
+	return &WriteSplitter{LineLimit: limit, Prefix: prefix}
+}
+
+// ByteSplitter returns a WriteSplitter set to split at the given number of bytes
+func ByteSplitter(limit int, prefix string) io.WriteCloser {
+	return &WriteSplitter{ByteLimit: limit, Prefix: prefix}
 }
 
 func init() {
