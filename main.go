@@ -33,7 +33,7 @@ func init() {
 	bareLog = log.New(os.Stderr, "", 0)
 
 	if help {
-		bareLog.Println("\nOmnilogger is an HTTP (or TCP) server that coalesces log data (line by line) from multiple sources to a common destination (defaults to consecutively named log files of ~5000 lines).\n")
+		bareLog.Println("\nOmnilogger is an HTTP server that coalesces log data (line by line) from multiple sources to a common destination. This defaults to consecutively named log files of ~5000 lines.\n")
 		flag.PrintDefaults()
 		bareLog.Println("\n")
 		os.Exit(0)

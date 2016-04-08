@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/henderjon/omnilogger?status.svg)](https://godoc.org/github.com/henderjon/omnilogger)
 
-Omnilogger is an HTTP (or TCP) server that coalesces log data (line by line) from
+Omnilogger is an HTTP server that coalesces log data (line by line) from
 multiple sources to a common destination (defaults to consecutively named log
 files of ~5000 lines).
 
@@ -22,8 +22,6 @@ storage facility--something like AWS S3.
 
 ### Is there anything else I ought to know?
 
-  - The default HTTP server is better than the TCP server.
-  - If you use the TCP server, idle connections are closed after 3 seconds.
   - The library `writesplitter` is useful on it's own, and has it's own [README.md](writesplitter).
   - All HTTP requests must be a POST, but the body is not parsed (e.g. form-encoded data will get logged as is)
   - All HTTP requests have to send a custom header ('X-Omnilog-Stream'). As of now
@@ -32,7 +30,7 @@ storage facility--something like AWS S3.
 
 ### You're HTTP errors are kinda cryptic.
 
-Yeah, I'm lazy. Instead of making super way-awesome error messages, I'm depending on
+Yeah, I'm lazy. Instead of making super cool error messages, I'm depending on
 the default text related to a given [HTTP status code](https://golang.org/pkg/net/http/#pkg-constants).
 
   - 200 (Ok) means that everything should have worked just fine. If not, report an issue.
