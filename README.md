@@ -1,7 +1,7 @@
 ## log all the things
 
 [![GoDoc](https://godoc.org/github.com/henderjon/omnilogger?status.svg)](https://godoc.org/github.com/henderjon/omnilogger)
-[![Build Status](https://travis-ci.org/henderjon/omnilogger.svg?branch=master)](https://travis-ci.org/henderjon/omnilogger)
+[![Build Status](https://travis-ci.org/henderjon/omnilogger.svg?branch=dev)](https://travis-ci.org/henderjon/omnilogger)
 
 Omnilogger is an HTTP server that coalesces log data (line by line) from
 multiple sources to a common destination (defaults to consecutively named log
