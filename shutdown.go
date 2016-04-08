@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	shutdownSig   int32 // atomically signal shutdown
+	shutdownSig int32 // atomically signal shutdown
 )
 
 // isShutdownMode checks to see if we're shutting down
@@ -19,7 +19,7 @@ func isShutdownMode() bool {
 	return s != 0
 }
 
-func signalShutdown(){
+func signalShutdown() {
 	atomic.AddInt32(&shutdownSig, 1)
 }
 

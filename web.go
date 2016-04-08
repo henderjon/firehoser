@@ -39,7 +39,7 @@ func Adapt(h http.Handler, adapters ...Adapter) http.Handler {
 // down before calling the passed handler
 func checkShutdown() Adapter {
 	return func(fn http.Handler) http.Handler {
-		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request){
+		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			// graceful shutdown, reject new requests
 			if isShutdownMode() {
 				s := http.StatusServiceUnavailable
@@ -55,7 +55,7 @@ func checkShutdown() Adapter {
 // is using the HTTP method POST before calling the passed handler
 func ensurePost() Adapter {
 	return func(fn http.Handler) http.Handler {
-		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request){
+		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			s := http.StatusMethodNotAllowed
 			// ensure a POST
 			if req.Method != methodPost {
@@ -73,7 +73,7 @@ func ensurePost() Adapter {
 // passed handler
 func checkAuth() Adapter {
 	return func(fn http.Handler) http.Handler {
-		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request){
+		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			// if no password was given to the server, leave the doors wide open
 			if pswd == "" {
 				fn.ServeHTTP(rw, req)
@@ -111,7 +111,7 @@ func checkAuth() Adapter {
 // headers for the 'X-Omnilog-Stream' header ... potentially making it's value useful
 // before calling the passed handler
 func parseCustomHeader(fn http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request){
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// must have custom header (@TODO future stream separation?)
 		if _, ok := req.Header[customHeader]; !ok {
 			s := http.StatusBadRequest
@@ -125,7 +125,7 @@ func parseCustomHeader(fn http.Handler) http.Handler {
 // parseRequest returns a handler that reads the body of the request and sends
 // it on the channel to be coalesced
 func parseRequest(ch chan []byte) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request){
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// if we get here, don't let the program goroutine die before the goroutine finishes
 		wg.Add(1)
 		defer wg.Done() // cover the short-circuit returns

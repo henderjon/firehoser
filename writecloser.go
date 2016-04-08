@@ -19,7 +19,7 @@ func newWriteCloser(t int) io.WriteCloser {
 	case t == ioFile:
 		if splitByteCount > 0 {
 			writer = ws.ByteSplitter(splitByteCount, splitPrefix)
-		}else{
+		} else {
 			writer = ws.LineSplitter(splitLineCount, splitPrefix)
 		}
 	case t == ioStderr:

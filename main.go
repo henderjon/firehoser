@@ -2,21 +2,21 @@ package main
 
 import (
 	"flag"
-	"log"
-	"os"
 	"io"
+	"log"
 	"net/http"
+	"os"
 )
 
 var (
-	port           string         // the port on which to listen
-	pswd           string         // a simple means of authentication
-	forceStdout    bool           // skip disk io and allow output redirection
-	splitLineCount int            // how many lines per log file
-	splitByteCount int            // how many bytes per log file
-	splitPrefix    string         // the prefix for the log file(s) name
-	help           bool           // I forgot my options
-	bareLog        *log.Logger    // log to stderr without the timestamps
+	port           string      // the port on which to listen
+	pswd           string      // a simple means of authentication
+	forceStdout    bool        // skip disk io and allow output redirection
+	splitLineCount int         // how many lines per log file
+	splitByteCount int         // how many bytes per log file
+	splitPrefix    string      // the prefix for the log file(s) name
+	help           bool        // I forgot my options
+	bareLog        *log.Logger // log to stderr without the timestamps
 )
 
 func init() {
@@ -47,7 +47,7 @@ func main() {
 
 	if forceStdout {
 		wr = newWriteCloser(ioStdout)
-	}else{
+	} else {
 		wr = newWriteCloser(ioFile)
 	}
 
@@ -62,7 +62,7 @@ func main() {
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
-func coalesce (ch chan []byte, wr io.Writer) {
+func coalesce(ch chan []byte, wr io.Writer) {
 	for b := range ch {
 		wr.Write(append(b, '\n'))
 	}
