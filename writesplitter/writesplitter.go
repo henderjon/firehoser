@@ -2,7 +2,6 @@ package writesplitter
 
 import (
 	"io"
-	"log"
 	"os"
 	"time"
 )
@@ -40,10 +39,6 @@ func LineSplitter(limit int, prefix string) io.WriteCloser {
 // ByteSplitter returns a WriteSplitter set to split at the given number of bytes
 func ByteSplitter(limit int, prefix string) io.WriteCloser {
 	return &WriteSplitter{ByteLimit: limit, Prefix: prefix}
-}
-
-func init() {
-	testFileIO()
 }
 
 // Close is a passthru and satisfies io.Closer. Subsequent writes will return an
@@ -85,15 +80,45 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 // newFile creates a new file with the given prefix
 func newFile(prefix string) (io.WriteCloser, error) {
 	fn := prefix + time.Now().Format(formatStr)
-	return os.Create(fn)
+	// fs is an abstraction layer for os allowing us to mock the filesystem for testing
+	return fs.Create(fn)
 }
 
-// testFileIO creates and removes a file at init() to ensure that the current dir is writable
-func testFileIO() {
+// TestFileIO creates and removes a file in the local dir to ensure that it is
+// writable. It doesn't use the fs layer because it should be used to test the
+// writability of the actual filesystem. This test is unnecessary for mock filesystems
+func TestFileIO() error {
 	fn := "test.tmp"
-	_, err := os.Create(fn)
-	if err != nil {
-		log.Fatal(err)
+	if _, err := os.Create(fn); err != nil {
+		return err
 	}
 	os.Remove(fn)
+	return nil
+}
+
+/// This is for mocking a filesystem. Used exclusively for testing
+///-----------------------------------------------------------------------------
+
+// creator is the interface used to represent the func(s) used for creating a
+// file. This abstraction allows us to swap the underlying filesystem with something
+// NOT the actual filesystem. useed for testing
+type creator interface {
+	Create(name string) (file, error)
+}
+
+// file is the interface used for our underlying File. os.File has a larger interface
+// but within this scope only Write and Close matter
+type file interface {
+	io.WriteCloser
+}
+
+// mocks the os package allowing access to a Create func
+var fs creator = ofs{}
+
+// type ofs is a passthru to os.Create()
+type ofs struct{}
+
+// satisfies Creator, allowing a passthru to os
+func (ofs) Create(name string) (file, error) {
+	return os.Create(name)
 }

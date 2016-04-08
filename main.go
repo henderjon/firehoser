@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	ws "github.com/henderjon/omnilogger/writesplitter"
 )
 
 var (
@@ -38,6 +39,11 @@ func init() {
 		bareLog.Println("\n")
 		os.Exit(0)
 	}
+
+	if err := ws.TestFileIO(); err != nil {
+		log.Fatal(err)
+	}
+
 	initShutdownWatcher()
 }
 
