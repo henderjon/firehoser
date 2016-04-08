@@ -3,7 +3,6 @@ package main
 import (
 	ws "github.com/henderjon/omnilogger/writesplitter"
 	"io"
-	"log"
 	"os"
 	"time"
 )
@@ -14,23 +13,8 @@ const (
 	ioStderr
 )
 
-type destination struct {
-	*log.Logger
-}
-
-// Write Satisfies io.WriteCloser but guaruntees atomicity via log
-func (d *destination) Write(s []byte) (int, error) {
-	d.Println(string(s)) // @TODO handle write errors
-	return len(s), nil
-}
-
-// Write Satisfies io.WriteCloser but guaruntees atomicity via log
-func (d *destination) Close() error {
-	return d.Close()
-}
-
 // getDest is a factory for various log destinations.
-func getDest(t int) io.WriteCloser {
+func newWriteCloser(t int) io.WriteCloser {
 	var writer io.WriteCloser
 	switch {
 	case t == ioFile:
@@ -47,5 +31,5 @@ func getDest(t int) io.WriteCloser {
 	case t == ioStdout:
 		writer = os.Stdout
 	}
-	return &destination{log.New(writer, "", 0)}
+	return writer
 }

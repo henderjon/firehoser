@@ -2,14 +2,13 @@ package main
 
 import (
 	"flag"
-	"io"
 	"log"
 	"os"
+	"io"
 	"net/http"
 )
 
 var (
-	// out            io.Writer      // where to write the output
 	port           string         // the port on which to listen
 	pswd           string         // a simple means of authentication
 	forceStdout    bool           // skip disk io and allow output redirection
@@ -34,25 +33,36 @@ func init() {
 	bareLog = log.New(os.Stderr, "", 0)
 
 	if help {
-
 		bareLog.Println("\nOmnilogger is an HTTP (or TCP) server that coalesces log data (line by line) from multiple sources to a common destination (defaults to consecutively named log files of ~5000 lines).\n")
 		flag.PrintDefaults()
 		bareLog.Println("\n")
 		os.Exit(0)
 	}
-
 	initShutdownWatcher()
 }
 
 func main() {
-	var out io.Writer
+	var wr io.Writer
+	ch := make(chan []byte, 0)
+
 	if forceStdout {
-		out = getDest(ioStdout)
-	} else {
-		out = getDest(ioFile)
+		wr = newWriteCloser(ioStdout)
+	}else{
+		wr = newWriteCloser(ioFile)
 	}
 
-	http.Handle("/", Adapt(parseRequest(out), checkShutdown(), ensurePost(), checkAuth(), parseCustomHeader))
+	go coalesce(ch, wr)
+
+	http.Handle("/", Adapt(parseRequest(ch), checkShutdown(), ensurePost(), checkAuth(), parseCustomHeader))
 	http.ListenAndServe(":"+port, nil)
 
+}
+
+// coalesce runs in it's own goroutine and ranges over a channel and writing the
+// data to an io.Writer. All our goroutines send data on this channel and this
+// func coalesces them in to one stream.
+func coalesce (ch chan []byte, wr io.Writer) {
+	for b := range ch {
+		wr.Write(append(b, '\n'))
+	}
 }

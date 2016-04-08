@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"io"
+	// "io"
 	"net/http"
 	"sync"
 )
@@ -18,8 +18,16 @@ var (
 	wg sync.WaitGroup // ensure that our goroutines finish before shut down
 )
 
+// defines a decorator that takes a handler and returns a handler. These functions
+// take a handler and return a handler. The returned handler does something before
+// calling the handler that was passed in. In this way, small pieces of logic can
+// broken into functions that are essentially chained together. Casting the returned
+// closure to http.HandlerFunc() allow a homogenious interface.
 type Adapter func(http.Handler) http.Handler
 
+// Adapt takes all of our adapters and runs them in order. The passed handler is
+// decorated in each step allowing small pieces of logic to be chained together
+// and wrapped around the base handler.
 func Adapt(h http.Handler, adapters ...Adapter) http.Handler {
 	for _, adapter := range adapters {
 		h = adapter(h)
@@ -27,10 +35,8 @@ func Adapt(h http.Handler, adapters ...Adapter) http.Handler {
 	return h
 }
 
-// scans the body of the POST request and writes each line. Currently prepends
-// the stream name (from the request header) to each line. This feature is less
-// useful each passing minute.
-
+// checkShutdown takes a handler and returns a handler that ensures we're not shutting
+// down before calling the passed handler
 func checkShutdown() Adapter {
 	return func(fn http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request){
@@ -45,7 +51,8 @@ func checkShutdown() Adapter {
 	}
 }
 
-// ensure a POST
+// ensurePost takes a handler and returns a handler that ensures the current request
+// is using the HTTP method POST before calling the passed handler
 func ensurePost() Adapter {
 	return func(fn http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request){
@@ -60,7 +67,10 @@ func ensurePost() Adapter {
 	}
 }
 
-// check the reqeust headers for the Authorization header (e.g. 'Authorization: Bearer this-is-a-string')
+// checkAuth takes a handler and returns a handler that checks the reqeust headers
+// for the Authorization header (e.g. 'Authorization: Bearer this-is-a-string')
+// and makes sure it matches the given password (if applicable) before calling the
+// passed handler
 func checkAuth() Adapter {
 	return func(fn http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request){
@@ -97,6 +107,9 @@ func checkAuth() Adapter {
 	}
 }
 
+// parseCustomHeader takes a handler and returns a handler that checks the request
+// headers for the 'X-Omnilog-Stream' header ... potentially making it's value useful
+// before calling the passed handler
 func parseCustomHeader(fn http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request){
 		// must have custom header (@TODO future stream separation?)
@@ -109,8 +122,9 @@ func parseCustomHeader(fn http.Handler) http.Handler {
 	})
 }
 
-
-func parseRequest(out io.Writer) http.Handler {
+// parseRequest returns a handler that reads the body of the request and sends
+// it on the channel to be coalesced
+func parseRequest(ch chan []byte) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request){
 		// if we get here, don't let the program goroutine die before the goroutine finishes
 		wg.Add(1)
@@ -122,12 +136,8 @@ func parseRequest(out io.Writer) http.Handler {
 		scanner := bufio.NewScanner(req.Body)
 		for scanner.Scan() {
 
-			if isBrokenPipe() {
-				out = getDest(ioFile)
-			}
-
-			n, _ := out.Write(scanner.Bytes())
-			rn += n
+			ch <- scanner.Bytes()
+			rn += len(scanner.Bytes())
 
 			if err := scanner.Err(); err != nil {
 				break
