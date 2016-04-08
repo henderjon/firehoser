@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
+	ws "github.com/henderjon/omnilogger/writesplitter"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	ws "github.com/henderjon/omnilogger/writesplitter"
 )
 
 var (

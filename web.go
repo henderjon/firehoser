@@ -140,7 +140,11 @@ func parseRequest(ch chan []byte) http.Handler {
 			rn += len(scanner.Bytes())
 
 			if err := scanner.Err(); err != nil {
-				break
+				// using the default scanner, this is most likely an error with the underlying
+				// Reader which would most likely indicate an error in the request
+				s = http.StatusBadRequest
+				http.Error(rw, (newResponse(s, 0)).Json(), s)
+				return
 			}
 		}
 		http.Error(rw, (newResponse(s, rn)).Json(), s)
