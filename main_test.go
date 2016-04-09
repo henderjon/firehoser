@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+	"io"
 )
 
 func TestCoalesce(t *testing.T) {
@@ -31,9 +32,6 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 
 	w := httptest.NewRecorder()
 	homeHandle.ServeHTTP(w, req)
-	req.Body.Close()
-
-	wg.Wait()
 
 	time.Sleep(5 * time.Second)
 
@@ -42,4 +40,22 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 		t.Error("Coalesce error: \nexpected\n", expected, "\nactual\n", b.Len())
 	}
 
+}
+
+func TestNewWriteCloser(t *testing.T) {
+	var ok bool
+
+	if _, ok = newWriteCloser().(io.WriteCloser); !ok {
+		t.Error("Interface error: WriteSplitter (lines)")
+	}
+
+	splitByteCount = 50
+	if _, ok = newWriteCloser().(io.WriteCloser); !ok {
+		t.Error("Interface error: WriteSplitter (bytes)")
+	}
+
+	forceStdout = true
+	if _, ok = newWriteCloser().(io.WriteCloser); !ok {
+		t.Error("Interface error: Stdout")
+	}
 }

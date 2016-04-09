@@ -13,6 +13,7 @@ var (
 	port           string      // the port on which to listen
 	pswd           string      // a simple means of authentication
 	forceStdout    bool        // skip disk io and allow output redirection
+	reqBuffer      int         // the size of the incoming request buffer (channel)
 	splitLineCount int         // how many lines per log file
 	splitByteCount int         // how many bytes per log file
 	splitPrefix    string      // the prefix for the log file(s) name
@@ -25,6 +26,7 @@ func init() {
 	flag.StringVar(&port, "port", "8080", "The port used for the server.")
 	flag.StringVar(&pswd, "auth", "", "If not empty, this is matched against the Authorization header (e.g. Authorization: Bearer my-password).")
 	flag.BoolVar(&forceStdout, "c", false, "Send output to stdout and not disk also disregards -l, -b, and -prefix.")
+	flag.IntVar(&reqBuffer, "buf", 0, "The size of the incoming request buffer. A zero (0) will disable buffering.")
 	flag.IntVar(&splitLineCount, "l", 5000, "The number of lines at which to split the log files. A zero (0) will disable splitting by lines.")
 	flag.IntVar(&splitByteCount, "b", 0, "The number of bytes at which to split the log files. A zero (0) will disable splitting by bytes.")
 	flag.StringVar(&splitPrefix, "prefix", "", "A custom prefix to use for log files.")
@@ -48,14 +50,8 @@ func init() {
 }
 
 func main() {
-	var wr io.Writer
-	ch := make(chan []byte, 0)
-
-	if forceStdout {
-		wr = newWriteCloser(ioStdout)
-	} else {
-		wr = newWriteCloser(ioFile)
-	}
+	ch := make(chan []byte, reqBuffer)
+	wr := newWriteCloser()
 
 	go coalesce(ch, wr)
 
@@ -72,4 +68,20 @@ func coalesce(ch chan []byte, wr io.Writer) {
 	for b := range ch {
 		wr.Write(append(b, '\n'))
 	}
+}
+
+// newWriteCloser is a factory for various io.WriteClosers.
+func newWriteCloser() io.WriteCloser {
+	var writer io.WriteCloser
+	if forceStdout {
+		return os.Stdout
+	}
+
+	if splitByteCount > 0 {
+		writer = ws.ByteSplitter(splitByteCount, splitPrefix)
+	} else {
+		writer = ws.LineSplitter(splitLineCount, splitPrefix)
+	}
+
+	return writer
 }
