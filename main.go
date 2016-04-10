@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 var (
@@ -50,7 +51,7 @@ func init() {
 }
 
 func main() {
-	ch := make(chan []byte, reqBuffer)
+	ch := make(chan []byte, 5)
 	wr := newWriteCloser()
 
 	go coalesce(ch, wr)
@@ -65,9 +66,16 @@ func main() {
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
 func coalesce(ch chan []byte, wr io.Writer) {
-	for b := range ch {
-		n, _ := wr.Write(append(b, '\n'))
-		totalBytes += uint64(n)
+	for {
+		select {
+		case b := <-ch:
+			n, _ := wr.Write(append(b, '\n'))
+			totalBytes += uint64(n)
+		case <-time.After(30 * time.Second): // after 30 seconds of inactivity close the file
+			log.Println("new writer")
+			wr.Close()
+			wr = newWriteCloser()
+		}
 	}
 }
 
@@ -75,7 +83,7 @@ func coalesce(ch chan []byte, wr io.Writer) {
 func newWriteCloser() io.WriteCloser {
 	var writer io.WriteCloser
 	if forceStdout {
-		return os.Stdout
+		return &pwc{os.Stdout}
 	}
 
 	if splitByteCount > 0 {
@@ -85,4 +93,15 @@ func newWriteCloser() io.WriteCloser {
 	}
 
 	return writer
+}
+
+// a protected Write Closer allows Close to be called on os.Stdout without the danger
+// of Stdout actually being closed
+type pwc struct {
+	io.WriteCloser
+}
+
+// satisfies the io.Close interface in such a way as to avoid closing anything
+func (pwc) Close() error {
+	return nil
 }
