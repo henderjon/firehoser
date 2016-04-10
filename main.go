@@ -10,15 +10,16 @@ import (
 )
 
 var (
-	port           string      // the port on which to listen
-	pswd           string      // a simple means of authentication
-	forceStdout    bool        // skip disk io and allow output redirection
-	reqBuffer      int         // the size of the incoming request buffer (channel)
-	splitLineCount int         // how many lines per log file
-	splitByteCount int         // how many bytes per log file
-	splitPrefix    string      // the prefix for the log file(s) name
-	help           bool        // I forgot my options
-	bareLog        *log.Logger // log to stderr without the timestamps
+	port           string                                  // the port on which to listen
+	pswd           string                                  // a simple means of authentication
+	forceStdout    bool                                    // skip disk io and allow output redirection
+	reqBuffer      int                                     // the size of the incoming request buffer (channel)
+	splitLineCount int                                     // how many lines per log file
+	splitByteCount int                                     // how many bytes per log file
+	splitPrefix    string                                  // the prefix for the log file(s) name
+	help           bool                                    // I forgot my options
+	helpLogger     *log.Logger = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
+	totalBytes     uint64                                  // 9223372036854775806
 )
 
 func init() {
@@ -33,12 +34,10 @@ func init() {
 	flag.BoolVar(&help, "h", false, "Show this message.")
 	flag.Parse()
 
-	bareLog = log.New(os.Stderr, "", 0)
-
 	if help {
-		bareLog.Println("\nOmnilogger is an HTTP server that coalesces log data (line by line) from multiple sources to a common destination. This defaults to consecutively named log files of ~5000 lines.\n")
+		helpLogger.Println("\nOmnilogger is an HTTP server that coalesces log data (line by line) from multiple sources to a common destination. This defaults to consecutively named log files of ~5000 lines.\n")
 		flag.PrintDefaults()
-		bareLog.Println("\n")
+		helpLogger.Println("\n")
 		os.Exit(0)
 	}
 
@@ -46,7 +45,8 @@ func init() {
 		log.Fatal(err)
 	}
 
-	initShutdownWatcher()
+	go watchShutdown() // catch system signals and shutdown gracefully
+	go watchStatus()   // periodically echo the total number of bytes collects and the duration of the program
 }
 
 func main() {
@@ -66,7 +66,8 @@ func main() {
 // func coalesces them in to one stream.
 func coalesce(ch chan []byte, wr io.Writer) {
 	for b := range ch {
-		wr.Write(append(b, '\n'))
+		n, _ := wr.Write(append(b, '\n'))
+		totalBytes += uint64(n)
 	}
 }
 
