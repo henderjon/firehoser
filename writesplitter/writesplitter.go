@@ -1,6 +1,7 @@
 package writesplitter
 
 import (
+	"errors"
 	"io"
 	"os"
 	"time"
@@ -10,6 +11,10 @@ const (
 	Kilobyte  = 1024        // const for specifying ByteLimit
 	Megabyte  = 1024 * 1024 // const for specifying ByteLimit
 	formatStr = "2006-01-02T15.04.05.999999999Z0700.log"
+)
+
+var (
+	ErrNotAFile = errors.New("WriteSplitter: invalid memory address or nil pointer dereference") // a cutom error to signal that no file was closed
 )
 
 // WriteSplitter represents a disk bound io.WriteCloser that splits the input
@@ -44,7 +49,10 @@ func ByteSplitter(limit int, prefix string) io.WriteCloser {
 // Close is a passthru and satisfies io.Closer. Subsequent writes will return an
 // error.
 func (ws *WriteSplitter) Close() error {
-	return ws.handle.Close()
+	if ws.handle != nil { // do not try to close nil
+		return ws.handle.Close()
+	}
+	return ErrNotAFile // do not hide errors, but signal it's a WriteSplit error as opposed to an underlying os.* error
 }
 
 // Write satisfies io.Writer and internally manages file io. Write also limits

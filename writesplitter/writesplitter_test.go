@@ -1,20 +1,20 @@
 package writesplitter
 
 import (
-	"testing"
-	"bytes"
 	"bufio"
+	"bytes"
 	"errors"
+	"testing"
 )
 
-type mockFs struct {}
-type brokenMockFs struct {}
+type mockFs struct{}
+type brokenMockFs struct{}
 
-type mockF struct{
+type mockF struct {
 	*bytes.Buffer
 }
 
-var mf file = &mockF{ &bytes.Buffer{} }
+var mf file = &mockF{&bytes.Buffer{}}
 
 func (mockFs) Create(name string) (file, error) {
 	return mf, nil
@@ -43,7 +43,7 @@ id commodo urna sed tempus mi Vestibulum facilisis
 imperdiet dolor sed sollicitudin Proin in lectus sed`)
 
 	expected := mockD.Len() - 7 // we do *not* expect the newlines
-	total    := 0
+	total := 0
 
 	scanner := bufio.NewScanner(mockD)
 	for scanner.Scan() {
@@ -67,7 +67,7 @@ func TestWriteSplit(t *testing.T) {
 
 	var b bytes.Buffer // pass in the buffer to allow for inspection
 
-	mf = &mockF{ &b }
+	mf = &mockF{&b}
 	ws := ByteSplitter(255, "")
 
 	mockD := bytes.NewBufferString(`Lorem ipsum dolor sit amet consectetur adipiscing elit
@@ -80,7 +80,7 @@ id commodo urna sed tempus mi Vestibulum facilisis
 imperdiet dolor sed sollicitudin Proin in lectus sed`)
 
 	expected := 102 // only the last three lines less two newlines (\n)
-	total    := 0
+	total := 0
 
 	scanner := bufio.NewScanner(mockD)
 	for scanner.Scan() {
@@ -113,7 +113,7 @@ id commodo urna sed tempus mi Vestibulum facilisis
 imperdiet dolor sed sollicitudin Proin in lectus sed`)
 
 	expected := mockD.Len() - 7 // we do *not* expect the newlines
-	total    := 0
+	total := 0
 
 	var n int
 	var err error
