@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	Kilobyte  = 1024        // const for specifying ByteLimit
-	Megabyte  = 1024 * 1024 // const for specifying ByteLimit
+	Kilobyte  = 1024                // const for specifying ByteLimit
+	Megabyte  = Kilobyte * Kilobyte // const for specifying ByteLimit
 	formatStr = "2006-01-02T15.04.05.999999999Z0700.log"
 )
 
@@ -24,13 +24,13 @@ var (
 // before the underlying write operation based on the previous invocation. In
 // other words, if a []byte sent to `Write()` contains enough bytes or new
 // lines ('\n') to exceed the given limit, a new file won't be generated until
-// the *next* invocation of `Write()`. If both LineLimit and ByteLimit is set,
+// the *next* invocation of `Write()`. If both LineLimit and ByteLimit are set,
 // preference is given to LineLimit. By default, no splitting occurs because
 // both LineLimit and ByteLimit are zero (0).
 type WriteSplitter struct {
 	LineLimit int            // how many write ops (typically one per line) before splitting the file
 	ByteLimit int            // how many bytes before splitting the file
-	Prefix    string         // files are named "Prefix + nano-precision-timestamp.log"
+	Prefix    string         // files are named: $prefix + $nano-precision-timestamp + '.log'
 	numBytes  int            // internal byte count
 	numLines  int            // internal line count
 	handle    io.WriteCloser // embedded file
@@ -93,10 +93,11 @@ func newFile(prefix string) (io.WriteCloser, error) {
 }
 
 // TestFileIO creates and removes a file in the local dir to ensure that it is
-// writable. It doesn't use the fs layer because it should be used to test the
-// writability of the actual filesystem. This test is unnecessary for mock filesystems
+// writable.
 func TestFileIO() error {
 	fn := "test.tmp"
+	// It doesn't use the fs layer because it should be used to test the
+	// writability of the actual filesystem. This test is unnecessary for mock filesystems
 	if _, err := os.Create(fn); err != nil {
 		return err
 	}
