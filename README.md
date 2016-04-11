@@ -30,6 +30,8 @@ storage facility--something like AWS S3.
   - All HTTP requests have to send a custom header ('X-Omnilogger-Stream'). As of
     now it only checks to see if it's there. In the future it **might** use
     this header to divert data to separate destinations or other purposes.
+  - After 10 minutes of inactivity, the currently open file is closed. Another is
+    automatically opened on the next write.
 
 ### You're HTTP errors are kinda cryptic.
 
@@ -64,5 +66,4 @@ ports can be used to accomplish the same thing.
 
 ## todo
 
-  - time expiration (file close/reopen)
-  - stream splitting (based on header)
+  - ? stream splitting (based on header)
