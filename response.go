@@ -17,11 +17,11 @@ func newResponse(s, r int) response {
 }
 
 // returns a JSON string
-func (r response) Json() string {
+func (r response) JSON() string {
 	return fmt.Sprintf(`{"Status":%d,"Message":"%s","Received":%d}`, r.Status, r.Message, r.Received)
 }
 
 // satisfies the encoding/json.Marshaler interface
 func (r response) MarshalJSON() ([]byte, error) {
-	return []byte(r.Json()), nil
+	return []byte(r.JSON()), nil
 }

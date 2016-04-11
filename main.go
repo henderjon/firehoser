@@ -11,17 +11,17 @@ import (
 )
 
 var (
-	port           string                                    // the port on which to listen
-	pswd           string                                    // a simple means of authentication
-	forceStdout    bool                                      // skip disk io and allow output redirection
-	reqBuffer      int                                       // the size of the incoming request buffer (channel)
-	splitLineCount int                                       // how many lines per log file
-	splitByteCount int                                       // how many bytes per log file
-	splitPrefix    string                                    // the prefix for the log file(s) name
-	help           bool                                      // I forgot my options
-	helpLogger     *log.Logger   = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
-	totalBytes     uint64                                    // 9223372036854775806
-	closeInterval  time.Duration = 10 * time.Minute          // how often to close our file and open a new one
+	port           string                      // the port on which to listen
+	pswd           string                      // a simple means of authentication
+	forceStdout    bool                        // skip disk io and allow output redirection
+	reqBuffer      int                         // the size of the incoming request buffer (channel)
+	splitLineCount int                         // how many lines per log file
+	splitByteCount int                         // how many bytes per log file
+	splitPrefix    string                      // the prefix for the log file(s) name
+	help           bool                        // I forgot my options
+	helpLogger     = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
+	totalBytes     uint64                      // 9223372036854775806
+	closeInterval  = 10 * time.Minute          // how often to close our file and open a new one
 )
 
 func init() {

@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	Kilobyte       uint64        = 1024                // the uint64 representation of a Kilobyte
-	Megabyte       uint64        = Kilobyte * Kilobyte // the uint64 representation of a Megabyte
-	Gigabyte       uint64        = Kilobyte * Megabyte // the uint64 representation of a Gigabyte
-	statusInterval time.Duration = 10 * time.Minute    // the interval for printing a status line
+	Kilobyte       uint64 = 1024                // the uint64 representation of a Kilobyte
+	Megabyte       uint64 = Kilobyte * Kilobyte // the uint64 representation of a Megabyte
+	Gigabyte       uint64 = Kilobyte * Megabyte // the uint64 representation of a Gigabyte
+	statusInterval        = 10 * time.Minute    // the interval for printing a status line
 )
 
 var firstPing time.Time = time.Now()

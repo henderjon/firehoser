@@ -44,7 +44,7 @@ func checkShutdown(shutdown chan struct{}) Adapter {
 			select {
 			case <-shutdown:
 				s := http.StatusServiceUnavailable
-				http.Error(rw, (newResponse(s, 0)).Json(), s)
+				http.Error(rw, (newResponse(s, 0)).JSON(), s)
 				return
 			default:
 			}
@@ -61,7 +61,7 @@ func ensurePost() Adapter {
 			s := http.StatusMethodNotAllowed
 			// ensure a POST
 			if req.Method != methodPost {
-				http.Error(rw, (newResponse(s, 0)).Json(), s)
+				http.Error(rw, (newResponse(s, 0)).JSON(), s)
 				return
 			}
 			fn.ServeHTTP(rw, req)
@@ -87,7 +87,7 @@ func checkAuth() Adapter {
 			// make sure the header exists
 			a, ok := req.Header["Authorization"]
 			if !ok {
-				http.Error(rw, (newResponse(s, 0)).Json(), s)
+				http.Error(rw, (newResponse(s, 0)).JSON(), s)
 				return
 			}
 
@@ -103,7 +103,7 @@ func checkAuth() Adapter {
 				}
 			}
 
-			http.Error(rw, (newResponse(s, 0)).Json(), s)
+			http.Error(rw, (newResponse(s, 0)).JSON(), s)
 			return
 		})
 	}
@@ -117,7 +117,7 @@ func parseCustomHeader(fn http.Handler) http.Handler {
 		// must have custom header (@TODO future stream separation?)
 		if _, ok := req.Header[customHeader]; !ok {
 			s := http.StatusBadRequest
-			http.Error(rw, (newResponse(s, 0)).Json(), s)
+			http.Error(rw, (newResponse(s, 0)).JSON(), s)
 			return
 		}
 		fn.ServeHTTP(rw, req)
@@ -145,10 +145,10 @@ func parseRequest(data chan []byte) http.Handler {
 				// using the default scanner, this is most likely an error with the underlying
 				// Reader which would most likely indicate an error in the request
 				s = http.StatusBadRequest
-				http.Error(rw, (newResponse(s, 0)).Json(), s)
+				http.Error(rw, (newResponse(s, 0)).JSON(), s)
 				return
 			}
 		}
-		http.Error(rw, (newResponse(s, rn)).Json(), s)
+		http.Error(rw, (newResponse(s, rn)).JSON(), s)
 	})
 }
