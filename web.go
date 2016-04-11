@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	customHeader = "X-Omnilog-Stream" // a custom header to validate intent
-	methodPost   = "POST"             // because http doesn't have this ...
+	customHeader = "X-Omnilogger-Stream" // a custom header to validate intent
+	methodPost   = "POST"                // because http doesn't have this ...
 )
 
 var (
@@ -37,14 +37,16 @@ func Adapt(h http.Handler, adapters ...Adapter) http.Handler {
 
 // checkShutdown takes a handler and returns a handler that ensures we're not shutting
 // down before calling the passed handler
-func checkShutdown() Adapter {
+func checkShutdown(shutdown chan struct{}) Adapter {
 	return func(fn http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			// graceful shutdown, reject new requests
-			if isShutdownMode() {
+			select {
+			case <-shutdown:
 				s := http.StatusServiceUnavailable
 				http.Error(rw, (newResponse(s, 0)).Json(), s)
 				return
+			default:
 			}
 			fn.ServeHTTP(rw, req)
 		})
@@ -108,7 +110,7 @@ func checkAuth() Adapter {
 }
 
 // parseCustomHeader takes a handler and returns a handler that checks the request
-// headers for the 'X-Omnilog-Stream' header ... potentially making it's value useful
+// headers for the 'X-Omnilogger-Stream' header ... potentially making it's value useful
 // before calling the passed handler
 func parseCustomHeader(fn http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -124,7 +126,7 @@ func parseCustomHeader(fn http.Handler) http.Handler {
 
 // parseRequest returns a handler that reads the body of the request and sends
 // it on the channel to be coalesced
-func parseRequest(ch chan []byte) http.Handler {
+func parseRequest(data chan []byte) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// if we get here, don't let the program goroutine die before the goroutine finishes
 		wg.Add(1)
@@ -136,7 +138,7 @@ func parseRequest(ch chan []byte) http.Handler {
 		scanner := bufio.NewScanner(req.Body)
 		for scanner.Scan() {
 
-			ch <- scanner.Bytes()
+			data <- scanner.Bytes()
 			rn += len(scanner.Bytes())
 
 			if err := scanner.Err(); err != nil {

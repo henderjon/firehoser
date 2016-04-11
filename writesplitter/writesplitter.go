@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	ErrNotAFile = errors.New("WriteSplitter: invalid memory address or nil pointer dereference") // a cutom error to signal that no file was closed
+	ErrNotAFile = errors.New("WriteSplitter: invalid memory address or nil pointer dereference") // a custom error to signal that no file was closed
 )
 
 // WriteSplitter represents a disk bound io.WriteCloser that splits the input

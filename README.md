@@ -27,9 +27,9 @@ storage facility--something like AWS S3.
     [README.md](writesplitter).
   - All HTTP requests must be a POST, but the body is not parsed (e.g.
     form-encoded data will get logged as is)
-  - All HTTP requests have to send a custom header ('X-Omnilog-Stream'). As of
+  - All HTTP requests have to send a custom header ('X-Omnilogger-Stream'). As of
     now it only checks to see if it's there. In the future it **might** use
-    this header to divert data to separate destinations.
+    this header to divert data to separate destinations or other purposes.
 
 ### You're HTTP errors are kinda cryptic.
 
@@ -38,7 +38,7 @@ the default text related to a given [HTTP status code](https://golang.org/pkg/ne
 
   - 200 (Ok) means that everything should have worked just fine. If not,
     report an issue.
-  - 400 (Bad Request) means you didn't send the 'X-Omnilog-Stream' header even
+  - 400 (Bad Request) means you didn't send the 'X-Omnilogger-Stream' header even
     after I told you to.
   - 403 (Forbidden) means (as of now) the token you sent in the Authorization
     header doesn't match what the server is looking for. I'm using the
