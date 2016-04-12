@@ -42,7 +42,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	if err := ws.TestFileIO(); err != nil {
+	if err := ws.TestFileIO(splitPrefix); err != nil {
 		log.Fatal(err)
 	}
 }

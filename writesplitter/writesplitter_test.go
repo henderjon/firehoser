@@ -5,23 +5,11 @@ import (
 	"bytes"
 	"errors"
 	"testing"
+	"io"
 )
-
-type mockFs struct{}
-type brokenMockFs struct{}
 
 type mockF struct {
 	*bytes.Buffer
-}
-
-var mf file = &mockF{&bytes.Buffer{}}
-
-func (mockFs) Create(name string) (file, error) {
-	return mf, nil
-}
-
-func (brokenMockFs) Create(name string) (file, error) {
-	return nil, errors.New("This is an error")
 }
 
 func (m *mockF) Close() error {
@@ -30,7 +18,9 @@ func (m *mockF) Close() error {
 }
 
 func TestWriteNoSplit(t *testing.T) {
-	fs = mockFs{}
+	createFile = func(name string) (io.WriteCloser, error) {
+		return &mockF{&bytes.Buffer{}}, nil
+	}
 	ws := LineSplitter(5, "")
 
 	mockD := bytes.NewBufferString(`Lorem ipsum dolor sit amet consectetur adipiscing elit
@@ -63,11 +53,12 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 }
 
 func TestWriteSplit(t *testing.T) {
-	fs = mockFs{}
-
 	var b bytes.Buffer // pass in the buffer to allow for inspection
 
-	mf = &mockF{&b}
+	createFile = func(name string) (io.WriteCloser, error) {
+		return &mockF{&b}, nil
+	}
+
 	ws := ByteSplitter(255, "")
 
 	mockD := bytes.NewBufferString(`Lorem ipsum dolor sit amet consectetur adipiscing elit
@@ -100,7 +91,9 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 }
 
 func TestErrorOnCreate(t *testing.T) {
-	fs = brokenMockFs{}
+	createFile = func(name string) (io.WriteCloser, error) {
+		return nil, errors.New("This is an error")
+	}
 	ws := LineSplitter(5, "")
 
 	mockD := bytes.NewBufferString(`Lorem ipsum dolor sit amet consectetur adipiscing elit

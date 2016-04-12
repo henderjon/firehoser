@@ -89,45 +89,30 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 func newFile(prefix string) (io.WriteCloser, error) {
 	fn := prefix + time.Now().Format(formatStr)
 	// fs is an abstraction layer for os allowing us to mock the filesystem for testing
-	return fs.Create(fn)
+	return createFile(fn)
 }
 
-// TestFileIO creates and removes a file in the local dir to ensure that it is
-// writable.
-func TestFileIO() error {
-	fn := "test.tmp"
+// TestFileIO creates and removes a file to ensure that the location is writable.
+func TestFileIO(prefix string) error {
+	fn := prefix + "test.log"
 	// It doesn't use the fs layer because it should be used to test the
 	// writability of the actual filesystem. This test is unnecessary for mock filesystems
-	if _, err := os.Create(fn); err != nil {
+	if _, err := createFile(fn); err != nil {
 		return err
 	}
-	os.Remove(fn)
+	removeFile(fn)
 	return nil
 }
 
-/// This is for mocking a filesystem. Used exclusively for testing
+/// This is for mocking the file IO. Used exclusively for testing
 ///-----------------------------------------------------------------------------
 
-// creator is the interface used to represent the func(s) used for creating a
-// file. This abstraction allows us to swap the underlying filesystem with something
-// NOT the actual filesystem. useed for testing
-type creator interface {
-	Create(name string) (file, error)
-}
-
-// file is the interface used for our underlying File. os.File has a larger interface
-// but within this scope only Write and Close matter
-type file interface {
-	io.WriteCloser
-}
-
-// mocks the os package allowing access to a Create func
-var fs creator = ofs{}
-
-// type ofs is a passthru to os.Create()
-type ofs struct{}
-
-// satisfies Creator, allowing a passthru to os
-func (ofs) Create(name string) (file, error) {
+// createFile is the file creating function that wraps os.Create
+var createFile = func(name string) (io.WriteCloser, error) {
 	return os.Create(name)
+}
+
+// removeFile is the file removing function that wraps os.Remove
+var removeFile = func(name string) error {
+	return os.Remove(name)
 }
