@@ -63,7 +63,7 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 	var e error
 
 	if ws.handle == nil {
-		ws.handle, e = newFile(ws.Prefix)
+		ws.handle, e = createFile(ws.Prefix)
 	}
 
 	switch {
@@ -71,7 +71,7 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 		fallthrough
 	case ws.ByteLimit > 0 && ws.numBytes >= ws.ByteLimit:
 		ws.Close()
-		ws.handle, e = newFile(ws.Prefix)
+		ws.handle, e = createFile(ws.Prefix)
 		ws.numLines, ws.numBytes = 0, 0
 	}
 
@@ -83,13 +83,6 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 	ws.numLines += 1
 	ws.numBytes += n
 	return n, e
-}
-
-// newFile creates a new file with the given prefix
-func newFile(prefix string) (io.WriteCloser, error) {
-	fn := prefix + time.Now().Format(formatStr)
-	// fs is an abstraction layer for os allowing us to mock the filesystem for testing
-	return createFile(fn)
 }
 
 // TestFileIO creates and removes a file to ensure that the location is writable.
@@ -108,7 +101,8 @@ func TestFileIO(prefix string) error {
 ///-----------------------------------------------------------------------------
 
 // createFile is the file creating function that wraps os.Create
-var createFile = func(name string) (io.WriteCloser, error) {
+var createFile = func(prefix string) (io.WriteCloser, error) {
+	name := prefix + time.Now().Format(formatStr)
 	return os.Create(name)
 }
 
