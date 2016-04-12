@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"path/filepath"
 )
 
 var (
@@ -17,7 +18,7 @@ var (
 	reqBuffer      int                         // the size of the incoming request buffer (channel)
 	splitLineCount int                         // how many lines per log file
 	splitByteCount int                         // how many bytes per log file
-	splitPrefix    string                      // the prefix for the log file(s) name
+	splitDir       string                      // the dir for the log file(s)
 	help           bool                        // I forgot my options
 	helpLogger     = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
 	totalBytes     uint64                      // 9223372036854775806
@@ -31,7 +32,7 @@ func init() {
 	flag.IntVar(&reqBuffer, "buf", 0, "The size of the incoming request buffer. A zero (0) will disable buffering.")
 	flag.IntVar(&splitLineCount, "l", 5000, "The number of lines at which to split the log files. A zero (0) will disable splitting by lines.")
 	flag.IntVar(&splitByteCount, "b", 0, "The number of bytes at which to split the log files. A zero (0) will disable splitting by bytes.")
-	flag.StringVar(&splitPrefix, "prefix", "", "A custom prefix to use for log files.")
+	flag.StringVar(&splitDir, "dir", "", "A dir to use for log files. The first arg after '--' is used as a filename prefix")
 	flag.BoolVar(&help, "h", false, "Show this message.")
 	flag.Parse()
 
@@ -41,20 +42,16 @@ func init() {
 		helpLogger.Println("\n")
 		os.Exit(0)
 	}
-
-	if err := ws.TestFileIO(splitPrefix); err != nil {
-		log.Fatal(err)
-	}
 }
 
 func main() {
+	prefix := noramlizePrefix(splitDir)
 	data := make(chan []byte, reqBuffer)
-	wc := newWriteCloser(nil)
 	shutdown := make(chan struct{}, 0)
 
 	go watchShutdown(shutdown) // catch system signals and shutdown gracefully
 	go watchStatus()           // periodically echo the total number of bytes collects and the duration of the program
-	go coalesce(data, wc)      // send all our request data to a single WriteCloser
+	go coalesce(data, prefix)  // send all our request data to a single WriteCloser
 
 	// adapters are closures and therefore executed in reverse order
 	http.Handle("/", Adapt(parseRequest(data), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(shutdown)))
@@ -65,20 +62,21 @@ func main() {
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
-func coalesce(data chan []byte, wc io.WriteCloser) {
+func coalesce(data chan []byte, prefix string) {
+	wc := newWriteCloser(prefix, nil)
 	for {
 		select {
 		case b := <-data:
 			n, _ := wc.Write(append(b, '\n'))
 			totalBytes += uint64(n)
 		case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
-			wc = newWriteCloser(wc)
+			wc = newWriteCloser(prefix, wc)
 		}
 	}
 }
 
 // newWriteCloser is a factory for various io.WriteClosers.
-func newWriteCloser(wc io.WriteCloser) io.WriteCloser {
+func newWriteCloser(path string, wc io.WriteCloser) io.WriteCloser {
 	if forceStdout {
 		return os.Stdout // don't ever worry about recycling stdout
 	}
@@ -91,9 +89,32 @@ func newWriteCloser(wc io.WriteCloser) io.WriteCloser {
 	}
 
 	if splitByteCount > 0 {
-		wc = ws.ByteSplitter(splitByteCount, splitPrefix)
+		wc = ws.ByteSplitter(splitByteCount, path)
 	} else {
-		wc = ws.LineSplitter(splitLineCount, splitPrefix)
+		wc = ws.LineSplitter(splitLineCount, path)
 	}
 	return wc
+}
+
+// take the given dir and prefix and make a clean path/filename prefix, if necessary
+func noramlizePrefix(dir string) string {
+	var e error
+	prefix := filepath.Clean(dir)
+	stat, e := os.Stat(prefix)
+
+	if os.IsNotExist(e) {
+		log.Fatal("specified dir does not exist")
+	}
+
+	if stat.IsDir() {
+		prefix += "/"
+	}
+
+	prefix += flag.Arg(0)
+
+	if e = ws.TestFileIO(prefix); e != nil {
+		log.Fatal(e)
+	}
+
+	return prefix
 }

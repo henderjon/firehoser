@@ -23,8 +23,9 @@ func (pwc) Close() error {
 func TestCoalesce(t *testing.T) {
 	ch := make(chan []byte, 7) // buffered channels are 0-based and we're sending 8 lines ...
 
-	b := &pwc{&bytes.Buffer{}}
-	go coalesce(ch, b)
+	// b := &pwc{&bytes.Buffer{}}
+	forceStdout = true
+	go coalesce(ch, "")
 
 	homeHandle := Adapt(parseRequest(ch), func(h http.Handler) http.Handler {
 		return h
@@ -49,8 +50,8 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 	time.Sleep(5 * time.Second) // let our goroutines finish
 
 	expected := 416 // 415 + the last newline added by coalesce()
-	if b.Len() != expected {
-		t.Error("Coalesce error: \nexpected\n", expected, "\nactual\n", b.Len())
+	if totalBytes != uint64(expected) {
+		t.Error("Coalesce error: \nexpected\n", expected, "\nactual\n", totalBytes)
 	}
 
 }
@@ -58,17 +59,17 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 func TestNewWriteCloser(t *testing.T) {
 	var ok bool
 
-	if _, ok = newWriteCloser(nil).(io.WriteCloser); !ok {
+	if _, ok = newWriteCloser("", nil).(io.WriteCloser); !ok {
 		t.Error("Interface error: WriteSplitter (lines)")
 	}
 
 	splitByteCount = 50
-	if _, ok = newWriteCloser(nil).(io.WriteCloser); !ok {
+	if _, ok = newWriteCloser("", nil).(io.WriteCloser); !ok {
 		t.Error("Interface error: WriteSplitter (bytes)")
 	}
 
 	forceStdout = true
-	if _, ok = newWriteCloser(nil).(io.WriteCloser); !ok {
+	if _, ok = newWriteCloser("", nil).(io.WriteCloser); !ok {
 		t.Error("Interface error: Stdout")
 	}
 }

@@ -51,6 +51,7 @@ func ByteSplitter(limit int, prefix string) io.WriteCloser {
 // error.
 func (ws *WriteSplitter) Close() error {
 	if ws.handle != nil { // do not try to close nil
+		ws.numLines, ws.numBytes = 0, 0
 		return ws.handle.Close()
 	}
 	return ErrNotAFile // do not hide errors, but signal it's a WriteSplit error as opposed to an underlying os.* error
@@ -73,7 +74,6 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 	case ws.ByteLimit > 0 && ws.numBytes >= ws.ByteLimit:
 		ws.Close()
 		ws.handle, e = createFile(fileName(ws.Prefix))
-		ws.numLines, ws.numBytes = 0, 0
 	}
 
 	if e != nil {
