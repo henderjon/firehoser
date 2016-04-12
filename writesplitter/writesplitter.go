@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"time"
+	// "path/filepath"
 )
 
 const (
@@ -63,7 +64,7 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 	var e error
 
 	if ws.handle == nil {
-		ws.handle, e = createFile(ws.Prefix)
+		ws.handle, e = createFile(fileName(ws.Prefix))
 	}
 
 	switch {
@@ -71,7 +72,7 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 		fallthrough
 	case ws.ByteLimit > 0 && ws.numBytes >= ws.ByteLimit:
 		ws.Close()
-		ws.handle, e = createFile(ws.Prefix)
+		ws.handle, e = createFile(fileName(ws.Prefix))
 		ws.numLines, ws.numBytes = 0, 0
 	}
 
@@ -87,7 +88,7 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 
 // TestFileIO creates and removes a file to ensure that the location is writable.
 func TestFileIO(prefix string) error {
-	fn := prefix + "test.log"
+	fn := fileName(prefix + "testlog-")
 	// It doesn't use the fs layer because it should be used to test the
 	// writability of the actual filesystem. This test is unnecessary for mock filesystems
 	if _, err := createFile(fn); err != nil {
@@ -97,12 +98,16 @@ func TestFileIO(prefix string) error {
 	return nil
 }
 
+// homogenize how filenames are generated
+func fileName(prefix string) string {
+	return prefix + time.Now().Format(formatStr)
+}
+
 /// This is for mocking the file IO. Used exclusively for testing
 ///-----------------------------------------------------------------------------
 
 // createFile is the file creating function that wraps os.Create
-var createFile = func(prefix string) (io.WriteCloser, error) {
-	name := prefix + time.Now().Format(formatStr)
+var createFile = func(name string) (io.WriteCloser, error) {
 	return os.Create(name)
 }
 
