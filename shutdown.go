@@ -24,7 +24,7 @@ func init() {
 func monitorStatus(shutdown chan struct{}) {
 
 	var sig os.Signal
-	Loop:
+Loop:
 	for {
 		select {
 		case sig = <-sysSigChan:

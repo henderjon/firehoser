@@ -48,15 +48,15 @@ func init() {
 
 func main() {
 	prefix := noramlizePrefix(splitDir)
-	data := make(chan []byte, reqBuffer)
+	inbound := make(chan []byte, reqBuffer)
 	shutdown := make(chan struct{}, 0)
+	byteCount := countBytes() // send the total bytes collected on a channel for periodic output
 
-	byteCount := countBytes()            // send the total bytes collected on a channel for periodic output
-	go monitorStatus(shutdown)           // catch system signals and shutdown gracefully
-	go coalesce(data, prefix, byteCount) // send all our request data to a single WriteCloser
+	go monitorStatus(shutdown)                           // catch system signals and shutdown gracefully
+	go coalesce(inbound, byteCount, writeCloser(prefix)) // send all our request data to a single WriteCloser
 
 	// adapters are closures and therefore executed in reverse order
-	http.Handle("/", Adapt(parseRequest(data), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(shutdown)))
+	http.Handle("/", Adapt(parseRequest(inbound), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(shutdown)))
 	http.ListenAndServe(":"+port, nil)
 
 }
@@ -64,38 +64,42 @@ func main() {
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
-func coalesce(data chan []byte, prefix string, byteCount chan int) {
-	wc := newWriteCloser(prefix, nil)
+func coalesce(inbound chan []byte, byteCount chan int, wcr writeCloserRecycler) {
+	wc := wcr(nil)
 	for {
 		select {
-		case b := <-data:
+		case b := <-inbound:
 			n, _ := wc.Write(append(b, '\n'))
 			byteCount <- n
 		case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
-			wc = newWriteCloser(prefix, wc)
+			wc = wcr(wc)
 		}
 	}
 }
 
+type writeCloserRecycler func(io.WriteCloser) io.WriteCloser
+
 // newWriteCloser is a factory for various io.WriteClosers.
-func newWriteCloser(path string, wc io.WriteCloser) io.WriteCloser {
-	if forceStdout {
-		return os.Stdout // don't ever worry about recycling stdout
-	}
-
-	// recycle the old io.WriteCloser with a new WriteSplitter, an explicit Close is better than waiting for GC
-	if wc != nil {
-		if e := wc.Close(); e != ws.ErrNotAFile {
-			log.Fatal(e)
+func writeCloser(path string) writeCloserRecycler {
+	return func(wc io.WriteCloser) io.WriteCloser {
+		if forceStdout {
+			return os.Stdout // don't ever worry about recycling stdout
 		}
-	}
 
-	if splitByteCount > 0 {
-		wc = ws.ByteSplitter(splitByteCount, path)
-	} else {
-		wc = ws.LineSplitter(splitLineCount, path)
+		// recycle the old io.WriteCloser with a new WriteSplitter, an explicit Close is better than waiting for GC
+		if wc != nil {
+			if e := wc.Close(); e != ws.ErrNotAFile {
+				log.Fatal(e)
+			}
+		}
+
+		if splitByteCount > 0 {
+			wc = ws.ByteSplitter(splitByteCount, path)
+		} else {
+			wc = ws.LineSplitter(splitLineCount, path)
+		}
+		return wc
 	}
-	return wc
 }
 
 // noramlizePrefix takes the given dir and prefix and makes a clean path/filename prefix, if necessary
