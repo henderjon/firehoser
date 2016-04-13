@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 	"path/filepath"
+	"time"
 )
 
 var (
@@ -37,9 +37,11 @@ func init() {
 	flag.Parse()
 
 	if help {
-		helpLogger.Println("\nOmnilogger is an HTTP server that coalesces log data (line by line) from multiple sources to a common destination. This defaults to consecutively named log files of ~5000 lines. After 10 min of inactivity, the current log file is closed and a new one is opened upon the next write.\n")
+		helpLogger.Println("")
+		helpLogger.Println("Omnilogger is an HTTP server that coalesces log data (line by line) from multiple sources to a common destination. This defaults to consecutively named log files of ~5000 lines. After 10 min of inactivity, the current log file is closed and a new one is opened upon the next write.")
+		helpLogger.Println("")
 		flag.PrintDefaults()
-		helpLogger.Println("\n")
+		helpLogger.Println("")
 		os.Exit(0)
 	}
 }
@@ -49,9 +51,9 @@ func main() {
 	data := make(chan []byte, reqBuffer)
 	shutdown := make(chan struct{}, 0)
 
-	go watchShutdown(shutdown) // catch system signals and shutdown gracefully
-	go watchStatus()           // periodically echo the total number of bytes collects and the duration of the program
-	go coalesce(data, prefix)  // send all our request data to a single WriteCloser
+	byteCount := countBytes()            // send the total bytes collected on a channel for periodic output
+	go monitorStatus(shutdown)           // catch system signals and shutdown gracefully
+	go coalesce(data, prefix, byteCount) // send all our request data to a single WriteCloser
 
 	// adapters are closures and therefore executed in reverse order
 	http.Handle("/", Adapt(parseRequest(data), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(shutdown)))
@@ -62,13 +64,13 @@ func main() {
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
-func coalesce(data chan []byte, prefix string) {
+func coalesce(data chan []byte, prefix string, byteCount chan int) {
 	wc := newWriteCloser(prefix, nil)
 	for {
 		select {
 		case b := <-data:
 			n, _ := wc.Write(append(b, '\n'))
-			totalBytes += uint64(n)
+			byteCount <- n
 		case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
 			wc = newWriteCloser(prefix, wc)
 		}
@@ -96,7 +98,7 @@ func newWriteCloser(path string, wc io.WriteCloser) io.WriteCloser {
 	return wc
 }
 
-// take the given dir and prefix and make a clean path/filename prefix, if necessary
+// noramlizePrefix takes the given dir and prefix and makes a clean path/filename prefix, if necessary
 func noramlizePrefix(dir string) string {
 	var e error
 	prefix := filepath.Clean(dir)

@@ -8,14 +8,16 @@ import (
 	// "path/filepath"
 )
 
+// const for specifying ByteLimit
 const (
-	Kilobyte  = 1024                // const for specifying ByteLimit
-	Megabyte  = Kilobyte * Kilobyte // const for specifying ByteLimit
+	Kilobyte  = 1024
+	Megabyte  = Kilobyte * Kilobyte
 	formatStr = "2006-01-02T15.04.05.999999999Z0700.log"
 )
 
+// a custom error to signal that no file was closed
 var (
-	ErrNotAFile = errors.New("WriteSplitter: invalid memory address or nil pointer dereference") // a custom error to signal that no file was closed
+	ErrNotAFile = errors.New("WriteSplitter: invalid memory address or nil pointer dereference")
 )
 
 // WriteSplitter represents a disk bound io.WriteCloser that splits the input
