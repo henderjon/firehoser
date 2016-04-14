@@ -50,6 +50,6 @@ func countBytes() chan int {
 
 // print a status line of total data collected over the life of our server
 func printStatus() {
-	total, _ := bc.Current(bc.Kilobyte)
+	total := bc.Current(bc.Kilobyte)
 	shutdownLogger.Printf(".status: collected %dK in %s\n", total, bc.Since().String())
 }

@@ -41,30 +41,22 @@ type WriteSplitter struct {
 }
 
 // LineSplitter returns a WriteSplitter set to split at the given number of lines
-func LineSplitter(limit int, dir, prefix string) (io.WriteCloser, error) {
-	dir, e := NoramlizeDirname(dir)
-	if e != nil {
-		return nil, e
-	}
+func LineSplitter(limit int, dir, prefix string) *WriteSplitter {
 	return &WriteSplitter{
 		Limit:  limit,
-		Dir:    dir,
+		Dir:    NoramlizeDirname(dir),
 		Prefix: prefix,
-	}, e
+	}
 }
 
 // ByteSplitter returns a WriteSplitter set to split at the given number of bytes
-func ByteSplitter(limit int, dir, prefix string) (io.WriteCloser, error) {
-	dir, e := NoramlizeDirname(dir)
-	if e != nil {
-		return nil, e
-	}
+func ByteSplitter(limit int, dir, prefix string) *WriteSplitter {
 	return &WriteSplitter{
 		Limit:  limit,
 		Bytes:  true,
-		Dir:    dir,
+		Dir:    NoramlizeDirname(dir),
 		Prefix: prefix,
-	}, e
+	}
 }
 
 // Close is a passthru and satisfies io.Closer. Subsequent writes will return an
@@ -107,16 +99,18 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 }
 
 // NoramlizeDirname takes the given dir and prefix and makes a clean path/filename prefix, if necessary
-func NoramlizeDirname(dir string) (string, error) {
-	var e error
-	// fname += time.Now().Format(time.RFC3339Nano)
-	dir = filepath.Clean(dir)
-	stat, e := os.Stat(dir)
+func NoramlizeDirname(dir string) string {
+	return filepath.Clean(dir)
+}
 
-	if os.IsNotExist(e) || !stat.IsDir() { // @TODO is writable?
-		return "", ErrNotADir
+// CheckDir ensure that the given dir exists and is a dir
+func CheckDir(dir string) error {
+	dir = NoramlizeDirname(dir)
+	stat, e := os.Stat(dir)
+	if os.IsNotExist(e) || !stat.IsDir() || os.IsPermission(e) {
+		return ErrNotADir
 	}
-	return dir, nil
+	return nil
 }
 
 /// This is for mocking the file IO. Used exclusively for testing
