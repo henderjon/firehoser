@@ -22,7 +22,7 @@ func writeCloser(dir, prefix string) writeCloserRecycler {
 
 		// recycle the old io.WriteCloser with a new WriteSplitter, an explicit Close is better than waiting for GC
 		if wc != nil {
-			if e := wc.Close(); e != ws.ErrNotAFile {
+			if e := wc.Close(); e != nil && e != ws.ErrNotAFile {
 				log.Fatal(e)
 			}
 		}
