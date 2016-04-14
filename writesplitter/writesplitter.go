@@ -8,12 +8,6 @@ import (
 	"time"
 )
 
-// const for specifying ByteLimit
-const (
-	Kilobyte = 1024
-	Megabyte = Kilobyte * Kilobyte
-)
-
 // a custom error to signal that no file was closed
 var (
 	ErrNotAFile = errors.New("WriteSplitter: invalid memory address or nil pointer dereference")
