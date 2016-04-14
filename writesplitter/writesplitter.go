@@ -39,7 +39,7 @@ func LineSplitter(limit int, dir, prefix string) *WriteSplitter {
 	return &WriteSplitter{
 		Limit:  limit,
 		Dir:    filepath.Clean(dir),
-		Prefix: prefix,
+		Prefix: filepath.Clean(prefix),
 	}
 }
 
@@ -49,7 +49,7 @@ func ByteSplitter(limit int, dir, prefix string) *WriteSplitter {
 		Limit:  limit,
 		Bytes:  true,
 		Dir:    filepath.Clean(dir),
-		Prefix: prefix,
+		Prefix: filepath.Clean(prefix),
 	}
 }
 
