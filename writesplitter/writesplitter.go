@@ -38,7 +38,7 @@ type WriteSplitter struct {
 func LineSplitter(limit int, dir, prefix string) *WriteSplitter {
 	return &WriteSplitter{
 		Limit:  limit,
-		Dir:    NoramlizeDirname(dir),
+		Dir:    filepath.Clean(dir),
 		Prefix: prefix,
 	}
 }
@@ -48,7 +48,7 @@ func ByteSplitter(limit int, dir, prefix string) *WriteSplitter {
 	return &WriteSplitter{
 		Limit:  limit,
 		Bytes:  true,
-		Dir:    NoramlizeDirname(dir),
+		Dir:    filepath.Clean(dir),
 		Prefix: prefix,
 	}
 }
@@ -92,14 +92,9 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 	return n, e
 }
 
-// NoramlizeDirname takes the given dir and prefix and makes a clean path/filename prefix, if necessary
-func NoramlizeDirname(dir string) string {
-	return filepath.Clean(dir)
-}
-
 // CheckDir ensure that the given dir exists and is a dir
 func CheckDir(dir string) error {
-	dir = NoramlizeDirname(dir)
+	dir = filepath.Clean(dir)
 	stat, e := os.Stat(dir)
 	if os.IsNotExist(e) || !stat.IsDir() || os.IsPermission(e) {
 		return ErrNotADir
