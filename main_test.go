@@ -12,7 +12,7 @@ import (
 // a protected Write Closer allows Close to be called on os.Stdout without the danger
 // of Stdout actually being closed
 type pwc struct {
-	*bytes.Buffer
+	io.Writer
 }
 
 // satisfies the io.Close interface in such a way as to avoid closing anything
@@ -21,13 +21,12 @@ func (pwc) Close() error {
 }
 
 func TestCoalesce(t *testing.T) {
-	ch := make(chan []byte, 7) // buffered channels are 0-based and we're sending 8 lines ...
+	in := make(chan []byte, 7) // buffered channels are 0-based and we're sending 8 lines ...
+	out := make(chan int, 7)   // buffered channels are 0-based and we're sending 8 lines ...
 
-	// b := &pwc{&bytes.Buffer{}}
-	forceStdout = true
-	go coalesce(ch, "")
+	go coalesce(in, out, func(io.WriteCloser) io.WriteCloser { return &pwc{&bytes.Buffer{}} })
 
-	homeHandle := Adapt(parseRequest(ch), func(h http.Handler) http.Handler {
+	homeHandle := Adapt(parseRequest(in), func(h http.Handler) http.Handler {
 		return h
 	})
 
@@ -47,29 +46,42 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 	w := httptest.NewRecorder()
 	homeHandle.ServeHTTP(w, req)
 
-	time.Sleep(5 * time.Second) // let our goroutines finish
+	var total int
+Loop:
+	for {
+		select {
+		case x := <-out:
+			total += x
+		case <-time.After(5 * time.Second):
+			break Loop // how do you test an infinite loop, kill it with fire
+		}
+	}
 
 	expected := 416 // 415 + the last newline added by coalesce()
-	if totalBytes != uint64(expected) {
-		t.Error("Coalesce error: \nexpected\n", expected, "\nactual\n", totalBytes)
+	if total != expected {
+		t.Error("Coalesce error: \nexpected\n", expected, "\nactual\n", total)
 	}
 
 }
 
 func TestNewWriteCloser(t *testing.T) {
 	var ok bool
+	var O writeCloserRecycler
 
-	if _, ok = newWriteCloser("", nil).(io.WriteCloser); !ok {
+	O = writeCloser("", "")
+	if _, ok = O(nil).(io.WriteCloser); !ok {
 		t.Error("Interface error: WriteSplitter (lines)")
 	}
 
-	splitByteCount = 50
-	if _, ok = newWriteCloser("", nil).(io.WriteCloser); !ok {
+	byBytes = true
+	O = writeCloser("", "")
+	if _, ok = O(nil).(io.WriteCloser); !ok {
 		t.Error("Interface error: WriteSplitter (bytes)")
 	}
 
 	forceStdout = true
-	if _, ok = newWriteCloser("", nil).(io.WriteCloser); !ok {
+	O = writeCloser("", "")
+	if _, ok = O(nil).(io.WriteCloser); !ok {
 		t.Error("Interface error: Stdout")
 	}
 }

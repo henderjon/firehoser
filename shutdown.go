@@ -35,7 +35,7 @@ Loop:
 		}
 	}
 
-	shutdownLogger.Printf("\n.signal: %s (%x); shutting down...\n", sig.String(), sig)
+	shutdownLogger.Printf("\n.signal: %s; shutting down...\n", sig.String())
 	wg.Wait()
 	printStatus()
 	shutdownLogger.Printf(".shutdown: program exit at %s\n", time.Now().Format(time.RFC3339))

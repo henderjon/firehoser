@@ -4,20 +4,20 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
-	// "path/filepath"
 )
 
 // const for specifying ByteLimit
 const (
-	Kilobyte  = 1024
-	Megabyte  = Kilobyte * Kilobyte
-	formatStr = "2006-01-02T15.04.05.999999999Z0700.log"
+	Kilobyte = 1024
+	Megabyte = Kilobyte * Kilobyte
 )
 
 // a custom error to signal that no file was closed
 var (
 	ErrNotAFile = errors.New("WriteSplitter: invalid memory address or nil pointer dereference")
+	ErrNotADir  = errors.New("WriteSplitter: specified dir is not a dir")
 )
 
 // WriteSplitter represents a disk bound io.WriteCloser that splits the input
@@ -31,22 +31,40 @@ var (
 // preference is given to LineLimit. By default, no splitting occurs because
 // both LineLimit and ByteLimit are zero (0).
 type WriteSplitter struct {
-	LineLimit int            // how many write ops (typically one per line) before splitting the file
-	ByteLimit int            // how many bytes before splitting the file
-	Prefix    string         // files are named: $prefix + $nano-precision-timestamp + '.log'
-	numBytes  int            // internal byte count
-	numLines  int            // internal line count
-	handle    io.WriteCloser // embedded file
+	Limit    int            // how many write ops (typically one per line) before splitting the file
+	Dir      string         // files are named: $prefix + $nano-precision-timestamp + '.log'
+	Prefix   string         // files are named: $prefix + $nano-precision-timestamp + '.log'
+	Bytes    bool           // how many bytes before splitting the file
+	numBytes int            // internal byte count
+	numLines int            // internal line count
+	handle   io.WriteCloser // embedded file
 }
 
 // LineSplitter returns a WriteSplitter set to split at the given number of lines
-func LineSplitter(limit int, prefix string) io.WriteCloser {
-	return &WriteSplitter{LineLimit: limit, Prefix: prefix}
+func LineSplitter(limit int, dir, prefix string) (io.WriteCloser, error) {
+	dir, e := NoramlizeDirname(dir)
+	if e != nil {
+		return nil, e
+	}
+	return &WriteSplitter{
+		Limit:  limit,
+		Dir:    dir,
+		Prefix: prefix,
+	}, e
 }
 
 // ByteSplitter returns a WriteSplitter set to split at the given number of bytes
-func ByteSplitter(limit int, prefix string) io.WriteCloser {
-	return &WriteSplitter{ByteLimit: limit, Prefix: prefix}
+func ByteSplitter(limit int, dir, prefix string) (io.WriteCloser, error) {
+	dir, e := NoramlizeDirname(dir)
+	if e != nil {
+		return nil, e
+	}
+	return &WriteSplitter{
+		Limit:  limit,
+		Bytes:  true,
+		Dir:    dir,
+		Prefix: prefix,
+	}, e
 }
 
 // Close is a passthru and satisfies io.Closer. Subsequent writes will return an
@@ -67,15 +85,15 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 	var e error
 
 	if ws.handle == nil {
-		ws.handle, e = createFile(fileName(ws.Prefix))
+		e = ws.create()
 	}
 
 	switch {
-	case ws.LineLimit > 0 && ws.numLines >= ws.LineLimit:
+	case ws.Limit > 0 && ws.Bytes && ws.numBytes >= ws.Limit:
 		fallthrough
-	case ws.ByteLimit > 0 && ws.numBytes >= ws.ByteLimit:
+	case ws.Limit > 0 && ws.numLines >= ws.Limit:
 		ws.Close()
-		ws.handle, e = createFile(fileName(ws.Prefix))
+		e = ws.create()
 	}
 
 	if e != nil {
@@ -88,32 +106,30 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 	return n, e
 }
 
-// TestFileIO creates and removes a file to ensure that the location is writable.
-func TestFileIO(prefix string) error {
-	fn := fileName(prefix + "testlog-")
-	// It doesn't use the fs layer because it should be used to test the
-	// writability of the actual filesystem. This test is unnecessary for mock filesystems
-	if _, err := createFile(fn); err != nil {
-		return err
-	}
-	removeFile(fn)
-	return nil
-}
+// NoramlizeDirname takes the given dir and prefix and makes a clean path/filename prefix, if necessary
+func NoramlizeDirname(dir string) (string, error) {
+	var e error
+	// fname += time.Now().Format(time.RFC3339Nano)
+	dir = filepath.Clean(dir)
+	stat, e := os.Stat(dir)
 
-// homogenize how filenames are generated
-func fileName(prefix string) string {
-	return prefix + time.Now().Format(formatStr)
+	if os.IsNotExist(e) || !stat.IsDir() { // @TODO is writable?
+		return "", ErrNotADir
+	}
+	return dir, nil
 }
 
 /// This is for mocking the file IO. Used exclusively for testing
 ///-----------------------------------------------------------------------------
 
 // createFile is the file creating function that wraps os.Create
-var createFile = func(name string) (io.WriteCloser, error) {
-	return os.Create(name)
-}
-
-// removeFile is the file removing function that wraps os.Remove
-var removeFile = func(name string) error {
-	return os.Remove(name)
+func (ws *WriteSplitter) create() error {
+	filename := filepath.Join(ws.Dir, ws.Prefix+time.Now().Format(time.RFC3339Nano))
+	f, e := os.Create(filename)
+	if e == nil {
+		ws.handle = f
+	} else {
+		ws.handle = nil
+	}
+	return e
 }
