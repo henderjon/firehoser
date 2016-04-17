@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"io"
 	"time"
 )
 
@@ -44,7 +45,7 @@ func init() {
 }
 
 func main() {
-	inbound := make(chan []byte, reqBuffer)
+	inbound := make(chan *payload, reqBuffer)
 	shutdown := make(chan struct{}, 0)
 	byteCount := countBytes() // send the total bytes collected on a channel for periodic output
 
@@ -60,15 +61,25 @@ func main() {
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
-func coalesce(inbound chan []byte, byteCount chan int, wcr writeCloserRecycler) {
-	wc := wcr(nil)
+func coalesce(inbound chan *payload, byteCount chan int, wcr writeCloserRecycler) {
+	wcMap := make(map[string]io.WriteCloser, 0)
+	// wc := wcr(nil)
 	for {
 		select {
 		case b := <-inbound:
-			n, _ := wc.Write(append(b, '\n'))
+			if _, ok := wcMap[b.stream]; !ok {
+				wcMap[b.stream] = writeCloser(splitDir, b.stream)(nil)
+			}
+
+			n, _ := wcMap[b.stream].Write(append(b.data, '\n'))
 			byteCount <- n
-		case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
-			wc = wcr(wc)
+		// case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
+			// wcMap[b.stream] = wcr(wc)
 		}
 	}
+}
+
+type payload struct{
+	stream string
+	data []byte
 }

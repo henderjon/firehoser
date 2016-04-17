@@ -126,7 +126,7 @@ func parseCustomHeader(fn http.Handler) http.Handler {
 
 // parseRequest returns a handler that reads the body of the request and sends
 // it on the channel to be coalesced
-func parseRequest(data chan []byte) http.Handler {
+func parseRequest(data chan *payload) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// if we get here, don't let the program goroutine die before the goroutine finishes
 		wg.Add(1)
@@ -138,7 +138,7 @@ func parseRequest(data chan []byte) http.Handler {
 		scanner := bufio.NewScanner(req.Body)
 		for scanner.Scan() {
 
-			data <- scanner.Bytes()
+			data <- &payload{stream: req.Header[customHeader][0], data: scanner.Bytes()}
 			rn += len(scanner.Bytes())
 
 			if err := scanner.Err(); err != nil {
