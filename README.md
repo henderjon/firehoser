@@ -53,11 +53,7 @@ the default text related to a given [HTTP status code](https://golang.org/pkg/ne
 
 The goal was to collect data from a variable number of servers as quickly as
 possible. To this end, by convention, all the data is sent as interlaced csv
-rows--the last value of each line was the name of the stream. Omnilogger's
-purpose was to take that data and write it to disk as *quickly* as possible
-while doing as little as possible with the data. Therefore, *at this time*,
-separating streams within Omnilogger adds an unnecessary layer of complexity
-in juggling streams and io.WriteClosers. Unnecessary, because a simple
+rows--the last value of each line is the name of the stream. Part of being *quick*, is to do as little as possible with the data. Therefore, *at this time*, there isn't a need for that feature because a simple
 one-liner in AWK will do this after the fact when speed and time are less of an
 issue (e.g. `cat file.log | awk -c '$(NR) == "stream_name"{print}'`). If
 keeping streams separate is important, multiple instances running on different
@@ -66,4 +62,4 @@ ports can be used to accomplish the same thing.
 
 ## todo
 
-  - ? stream splitting (based on header)
+  - stream splitting (based on header)
