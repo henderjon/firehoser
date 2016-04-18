@@ -24,23 +24,23 @@ var (
 
 type payload struct {
 	stream string
-	data []byte
+	data   []byte
 }
 
 func init() {
 	flag.StringVar(&port, "port", "8080", "The port used for the server.")
 	flag.StringVar(&pswd, "auth", "", "If not empty, this is matched against the Authorization header (e.g. Authorization: Bearer my-password).")
-	flag.BoolVar(&forceStdout, "c", false, "Write to stdout; disregard -l, -b, and -prefix.")
+	flag.BoolVar(&forceStdout, "c", false, "Write to stdout; disregard -l, -b, and -prefix. **Not** recommended for production use.")
 	flag.IntVar(&reqBuffer, "buf", 0, "The size of the incoming request buffer. A zero (0) will disable buffering.")
 	flag.IntVar(&limit, "l", 5000, "The limit at which to split the log files. Assumes a line count. A zero (0) will disable splitting.")
 	flag.BoolVar(&byBytes, "bytes", false, "Split according to byte count, not line count.")
-	flag.StringVar(&splitDir, "dir", "", "A dir to use for log files. The first arg after '--' is used as a filename prefix")
+	flag.StringVar(&splitDir, "dir", "", "A dir to use for log files. The first arg after '--' is used as a filename prefix. (e.g. '% omnilogger -dir /path/to/log-dir -- file-prefix-')")
 	flag.BoolVar(&help, "h", false, "Show this message.")
 	flag.Parse()
 
 	if help {
 		helpLogger.Println("")
-		helpLogger.Println("Omnilogger is an HTTP server that coalesces log data (line by line) from multiple sources to a common destination. This defaults to consecutively named log files of ~5000 lines. After 10 min of inactivity, the current log file is closed and a new one is opened upon the next write.")
+		helpLogger.Println("Omnilogger is an HTTP server that coalesces log data (line by line) from multiple sources to a common destination. This defaults to consecutively named log files of ~5000 lines.")
 		helpLogger.Println("")
 		flag.PrintDefaults()
 		helpLogger.Println("")
