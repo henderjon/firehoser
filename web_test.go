@@ -8,7 +8,7 @@ import (
 )
 
 func TestOK(t *testing.T) {
-	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
 	homeHandle := Adapt(parseRequest(ch), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(nil))
 
 	mockD := bytes.NewBufferString(`Lorem ipsum dolor sit amet consectetur adipiscing elit
@@ -41,7 +41,7 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 }
 
 func TestOKAuth(t *testing.T) {
-	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
 	homeHandle := Adapt(parseRequest(ch), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(nil))
 
 	mockD := bytes.NewBufferString(`Lorem ipsum dolor sit amet consectetur adipiscing elit
@@ -75,7 +75,7 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 }
 
 func TestBadRequest(t *testing.T) {
-	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
 	homeHandle := Adapt(parseRequest(ch), parseCustomHeader)
 
 	req, _ := http.NewRequest("POST", "", bytes.NewBufferString("..."))
@@ -97,7 +97,7 @@ func TestBadRequest(t *testing.T) {
 }
 
 func TestMethodNotAllowed(t *testing.T) {
-	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
 	homeHandle := Adapt(parseRequest(ch), ensurePost())
 
 	req, _ := http.NewRequest("GET", "", bytes.NewBufferString("..."))
@@ -118,7 +118,7 @@ func TestMethodNotAllowed(t *testing.T) {
 }
 
 func TestForbidden(t *testing.T) {
-	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
 	homeHandle := Adapt(parseRequest(ch), checkAuth())
 
 	req, _ := http.NewRequest("POST", "", bytes.NewBufferString("..."))
@@ -141,7 +141,7 @@ func TestForbidden(t *testing.T) {
 }
 
 func TestForbidden2(t *testing.T) {
-	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
 	homeHandle := Adapt(parseRequest(ch), checkAuth())
 
 	req, _ := http.NewRequest("POST", "", bytes.NewBufferString("..."))
@@ -165,7 +165,7 @@ func TestForbidden2(t *testing.T) {
 }
 
 func TestShutdown(t *testing.T) {
-	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
 	sh := make(chan struct{}, 1)
 	homeHandle := Adapt(parseRequest(ch), checkShutdown(sh))
 

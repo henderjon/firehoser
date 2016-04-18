@@ -22,6 +22,11 @@ var (
 	closeInterval = 10 * time.Minute          // how often to close our file and open a new one
 )
 
+type payload struct {
+	stream string
+	data []byte
+}
+
 func init() {
 	flag.StringVar(&port, "port", "8080", "The port used for the server.")
 	flag.StringVar(&pswd, "auth", "", "If not empty, this is matched against the Authorization header (e.g. Authorization: Bearer my-password).")
@@ -44,7 +49,7 @@ func init() {
 }
 
 func main() {
-	inbound := make(chan []byte, reqBuffer)
+	inbound := make(chan *payload, reqBuffer)
 	shutdown := make(chan struct{}, 0)
 	byteCount := countBytes() // send the total bytes collected on a channel for periodic output
 
@@ -54,18 +59,17 @@ func main() {
 	// adapters are closures and therefore executed in reverse order
 	http.Handle("/", Adapt(parseRequest(inbound), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(shutdown)))
 	http.ListenAndServe(":"+port, nil)
-
 }
 
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
-func coalesce(inbound chan []byte, byteCount chan int, wcr writeCloserRecycler) {
+func coalesce(inbound chan *payload, byteCount chan int, wcr writeCloserRecycler) {
 	wc := wcr(nil)
 	for {
 		select {
 		case b := <-inbound:
-			n, _ := wc.Write(append(b, '\n'))
+			n, _ := wc.Write(append(b.data, '\n'))
 			byteCount <- n
 		case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
 			wc = wcr(wc)
