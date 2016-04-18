@@ -2,10 +2,11 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net/http"
 	"os"
-	"io"
+	"sync"
 	"time"
 )
 
@@ -21,7 +22,14 @@ var (
 	helpLogger    = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
 	totalBytes    uint64                      // 9223372036854775806
 	closeInterval = 10 * time.Minute          // how often to close our file and open a new one
+	wg            sync.WaitGroup              // ensure that our goroutines finish before shut down
 )
+
+// payload wraps the data and the intended stream to transport via channel
+type payload struct {
+	stream string
+	data   []byte
+}
 
 func init() {
 	flag.StringVar(&port, "port", "8080", "The port used for the server.")
@@ -49,8 +57,8 @@ func main() {
 	shutdown := make(chan struct{}, 0)
 	byteCount := countBytes() // send the total bytes collected on a channel for periodic output
 
-	go monitorStatus(shutdown)                                          // catch system signals and shutdown gracefully
-	go coalesce(inbound, byteCount, writeCloser(splitDir, flag.Arg(0))) // send all our request data to a single WriteCloser
+	go monitorStatus(shutdown)                   // catch system signals and shutdown gracefully
+	go coalesce(inbound, byteCount, writeCloser) // send all our request data to a single WriteCloser
 
 	// adapters are closures and therefore executed in reverse order
 	http.Handle("/", Adapt(parseRequest(inbound), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(shutdown)))
@@ -61,25 +69,23 @@ func main() {
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
-func coalesce(inbound chan *payload, byteCount chan int, wcr writeCloserRecycler) {
+func coalesce(inbound chan *payload, byteCount chan int, factory writeCloserRecyclerFactory) {
 	wcMap := make(map[string]io.WriteCloser, 0)
-	// wc := wcr(nil)
 	for {
 		select {
 		case b := <-inbound:
+			wg.Add(1)
 			if _, ok := wcMap[b.stream]; !ok {
-				wcMap[b.stream] = writeCloser(splitDir, b.stream)(nil)
+				wcMap[b.stream] = factory(splitDir, b.stream)(nil)
 			}
 
-			n, _ := wcMap[b.stream].Write(append(b.data, '\n'))
-			byteCount <- n
-		// case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
+			// go func(wr io.WriteCloser) {
+				n, _ := wcMap[b.stream].Write(append(b.data, '\n'))
+				byteCount <- n
+				wg.Done()
+			// }(wcMap[b.stream])
+			// case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
 			// wcMap[b.stream] = wcr(wc)
 		}
 	}
-}
-
-type payload struct{
-	stream string
-	data []byte
 }

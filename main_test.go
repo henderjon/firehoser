@@ -21,10 +21,14 @@ func (pwc) Close() error {
 }
 
 func TestCoalesce(t *testing.T) {
-	in := make(chan []byte, 7) // buffered channels are 0-based and we're sending 8 lines ...
-	out := make(chan int, 7)   // buffered channels are 0-based and we're sending 8 lines ...
+	in := make(chan *payload, 7) // buffered channels are 0-based and we're sending 8 lines ...
+	out := make(chan int, 7)     // buffered channels are 0-based and we're sending 8 lines ...
 
-	go coalesce(in, out, func(io.WriteCloser) io.WriteCloser { return &pwc{&bytes.Buffer{}} })
+	go coalesce(in, out, func(dir, prefix string) writeCloserRecycler {
+		return func(io.WriteCloser) io.WriteCloser {
+			return &pwc{&bytes.Buffer{}}
+		}
+	})
 
 	homeHandle := Adapt(parseRequest(in), func(h http.Handler) http.Handler {
 		return h

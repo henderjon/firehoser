@@ -7,6 +7,10 @@ import (
 	"os"
 )
 
+// writeCloserRecyclerFactory returns a factory that returns writeCloserRecycler that are bound to the given dir and prefix
+type writeCloserRecyclerFactory func(dir, prefix string) writeCloserRecycler
+
+// writeCloserRecycler io.WriteCloser closes and opens a writesplitter bound to the same destination
 type writeCloserRecycler func(io.WriteCloser) io.WriteCloser
 
 // newWriteCloser is a factory for various io.WriteClosers.
