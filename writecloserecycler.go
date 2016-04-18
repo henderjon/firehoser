@@ -16,10 +16,6 @@ func writeCloser(dir, prefix string) writeCloserRecycler {
 		log.Fatal(e, dir)
 	}
 
-	if dir == "." {
-		dir = ""
-	}
-
 	return func(wc io.WriteCloser) io.WriteCloser {
 		if forceStdout {
 			return os.Stdout // don't ever worry about recycling stdout
