@@ -132,7 +132,6 @@ func parseRequest(data chan *payload) http.Handler {
 		rn := 0
 		scanner := bufio.NewScanner(req.Body)
 		for scanner.Scan() {
-
 			// send the payload to coalesce
 			data <- &payload{stream: req.Header[customHeader][0], data: scanner.Bytes()}
 			rn += len(scanner.Bytes())

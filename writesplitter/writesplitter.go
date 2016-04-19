@@ -107,7 +107,17 @@ func CheckDir(dir string) error {
 
 // createFile is the file creating function that wraps os.Create
 func (ws *WriteSplitter) create() error {
+
+	if ws.Dir == "." { // avoid prefixing files with "."
+		ws.Dir = ""
+	}
+
+	if ws.Prefix == "." { // avoid prefixing files with "."
+		ws.Prefix = ""
+	}
+
 	filename := filepath.Join(ws.Dir, ws.Prefix+time.Now().Format(time.RFC3339Nano))
+
 	f, e := os.Create(filename)
 	if e == nil {
 		ws.handle = f
