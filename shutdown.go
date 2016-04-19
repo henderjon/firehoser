@@ -12,6 +12,7 @@ import (
 var (
 	sysSigChan     chan os.Signal
 	shutdownLogger = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
+	statusInterval = 10 * time.Minute
 )
 
 func init() {
@@ -30,8 +31,8 @@ Loop:
 		case sig = <-sysSigChan:
 			close(shutdown) // idiom via: http://dave.cheney.net/2013/04/30/curious-channels
 			break Loop
-		case <-time.After(10 * time.Minute):
-			printStatus()
+		case <-time.After():
+			printStatus(statusInterval)
 		}
 	}
 
