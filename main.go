@@ -79,9 +79,9 @@ func coalesce(inbound chan *payload, byteCount chan int, factory writeCloserRecy
 			}
 
 			// go func(wr io.WriteCloser) {
-				n, _ := wcMap[b.stream].Write(append(b.data, '\n'))
-				byteCount <- n
-				wg.Done()
+			n, _ := wcMap[b.stream].Write(append(b.data, '\n'))
+			byteCount <- n
+			wg.Done()
 			// }(wcMap[b.stream])
 			// case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
 			// wcMap[b.stream] = wcr(wc)
