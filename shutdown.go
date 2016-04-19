@@ -31,8 +31,8 @@ Loop:
 		case sig = <-sysSigChan:
 			close(shutdown) // idiom via: http://dave.cheney.net/2013/04/30/curious-channels
 			break Loop
-		case <-time.After():
-			printStatus(statusInterval)
+		case <-time.After(statusInterval):
+			printStatus()
 		}
 	}
 
@@ -51,6 +51,6 @@ func countBytes() chan int {
 
 // print a status line of total data collected over the life of our server
 func printStatus() {
-	total := bc.Current(bc.Kilobyte)
-	shutdownLogger.Printf(".status: collected %dK in %s\n", total, bc.Since().String())
+	total := bc.Current(bc.Megabyte)
+	shutdownLogger.Printf(".status: collected %dM in %s\n", total, bc.Since().String())
 }
