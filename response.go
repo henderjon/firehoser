@@ -18,7 +18,7 @@ func newResponse(s, r int) response {
 
 // returns a JSON string
 func (r response) JSON() string {
-	return fmt.Sprintf(`{"Status":%d,"Message":"%s","Received":%d}`, r.Status, r.Message, r.Received)
+	return fmt.Sprint(`{"Status":`, r.Status, `,"Message":"`, r.Message, `","Received":`, r.Received, `}`)
 }
 
 // satisfies the encoding/json.Marshaler interface
