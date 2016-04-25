@@ -3,16 +3,11 @@ package main
 import (
 	"bufio"
 	"net/http"
-	"sync"
 )
 
 const (
 	customHeader = "X-Omnilogger-Stream" // a custom header to validate intent
 	methodPost   = "POST"                // because http doesn't have this ...
-)
-
-var (
-	wg sync.WaitGroup // ensure that our goroutines finish before shut down
 )
 
 // Adapter is a decorator that takes a handler and returns a handler.  The
@@ -137,7 +132,7 @@ func parseRequest(data chan *payload) http.Handler {
 		rn := 0
 		scanner := bufio.NewScanner(req.Body)
 		for scanner.Scan() {
-
+			// send the payload to coalesce
 			data <- &payload{stream: req.Header[customHeader][0], data: scanner.Bytes()}
 			rn += len(scanner.Bytes())
 
