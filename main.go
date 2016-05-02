@@ -60,7 +60,7 @@ func main() {
 	http.Handle("/", http.StripPrefix("/", fs))
 
 	// adapters are closures and therefore executed in reverse order
-	http.Handle("/", Adapt(parseRequest(inbound), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(shutdown)))
+	http.Handle("/log", Adapt(parseRequest(inbound), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(shutdown)))
 	http.ListenAndServe(":"+port, nil)
 }
 
