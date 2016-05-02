@@ -54,7 +54,12 @@ func main() {
 	shutdown := make(chan struct{}, 0)
 
 	go monitorStatus(shutdown)                                          // catch system signals and shutdown gracefully
-	go coalesce(inbound, byteCounter, writeCloser(splitDir, flag.Arg(0))) // send all our request data to a single WriteCloser
+
+	for t := 0; t <= 3; t += 1 {
+		go coalesce(inbound, byteCounter, writeCloser(splitDir, flag.Arg(0))) // send all our request data to a single WriteCloser
+	}
+
+	// go coalesce(inbound, byteCounter, writeCloser(splitDir, flag.Arg(0))) // send all our request data to a single WriteCloser
 
 	fs := http.FileServer(http.Dir("public"))
 	http.Handle("/", http.StripPrefix("/", fs))
