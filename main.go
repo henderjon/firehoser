@@ -56,6 +56,9 @@ func main() {
 	go monitorStatus(shutdown)                                          // catch system signals and shutdown gracefully
 	go coalesce(inbound, byteCount, writeCloser(splitDir, flag.Arg(0))) // send all our request data to a single WriteCloser
 
+	fs := http.FileServer(http.Dir("public"))
+	http.Handle("/", http.StripPrefix("/", fs))
+
 	// adapters are closures and therefore executed in reverse order
 	http.Handle("/", Adapt(parseRequest(inbound), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(shutdown)))
 	http.ListenAndServe(":"+port, nil)
