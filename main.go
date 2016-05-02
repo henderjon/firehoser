@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"github.com/henderjon/omnilogger/counter"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 	splitDir      string                      // the dir for the log file(s)
 	help          bool                        // I forgot my options
 	helpLogger    = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
-	totalBytes    uint64                      // 9223372036854775806
+	byteCounter   = counter.NewCounter()      // count the total bytes collected for output during shutdown
 	closeInterval = 10 * time.Minute          // how often to close our file and open a new one
 )
 
@@ -51,10 +52,9 @@ func init() {
 func main() {
 	inbound := make(chan *payload, reqBuffer)
 	shutdown := make(chan struct{}, 0)
-	byteCount := countBytes() // send the total bytes collected on a channel for periodic output
 
 	go monitorStatus(shutdown)                                          // catch system signals and shutdown gracefully
-	go coalesce(inbound, byteCount, writeCloser(splitDir, flag.Arg(0))) // send all our request data to a single WriteCloser
+	go coalesce(inbound, byteCounter, writeCloser(splitDir, flag.Arg(0))) // send all our request data to a single WriteCloser
 
 	fs := http.FileServer(http.Dir("public"))
 	http.Handle("/", http.StripPrefix("/", fs))
@@ -67,13 +67,13 @@ func main() {
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
-func coalesce(inbound chan *payload, byteCount chan int, wcr writeCloserRecycler) {
+func coalesce(inbound chan *payload, byteCounter *counter.Counter, wcr writeCloserRecycler) {
 	wc := wcr(nil)
 	for {
 		select {
 		case b := <-inbound:
 			n, _ := wc.Write(append(b.data, '\n'))
-			byteCount <- n
+			byteCounter.IncrBy(uint64(n))
 		case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
 			wc = wcr(wc)
 		}

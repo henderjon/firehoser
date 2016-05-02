@@ -1,7 +1,7 @@
 package main
 
 import (
-	bc "github.com/henderjon/omnilogger/bytecounter"
+	"github.com/henderjon/omnilogger/counter"
 	"log"
 	"os"
 	"os/signal"
@@ -43,14 +43,8 @@ Loop:
 	os.Exit(1)
 }
 
-func countBytes() chan int {
-	byteCount := make(chan int, 0)
-	bc.IncrBy(byteCount)
-	return byteCount
-}
-
 // print a status line of total data collected over the life of our server
 func printStatus() {
-	total := bc.Current(bc.Megabyte)
-	shutdownLogger.Printf(".status: collected %dM in %s\n", total, bc.Since().String())
+	total := byteCounter.Current(counter.Megabyte)
+	shutdownLogger.Printf(".status: collected %dM from %d hits in %s\n", total, hitCounter.Current(uint64(0)), byteCounter.Since().String())
 }

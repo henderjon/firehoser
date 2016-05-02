@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"github.com/henderjon/omnilogger/counter"
 	"testing"
 	"time"
 )
@@ -22,9 +23,9 @@ func (pwc) Close() error {
 
 func TestCoalesce(t *testing.T) {
 	in := make(chan *payload, 7) // buffered channels are 0-based and we're sending 8 lines ...
-	out := make(chan int, 7)     // buffered channels are 0-based and we're sending 8 lines ...
+	byteCounter := counter.NewCounter()
 
-	go coalesce(in, out, func(io.WriteCloser) io.WriteCloser { return &pwc{&bytes.Buffer{}} })
+	go coalesce(in, byteCounter, func(io.WriteCloser) io.WriteCloser { return &pwc{&bytes.Buffer{}} })
 
 	homeHandle := Adapt(parseRequest(in), func(h http.Handler) http.Handler {
 		return h
@@ -50,15 +51,13 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 Loop:
 	for {
 		select {
-		case x := <-out:
-			total += x
 		case <-time.After(5 * time.Second):
 			break Loop // how do you test an infinite loop, kill it with fire
 		}
 	}
 
-	expected := 416 // 415 + the last newline added by coalesce()
-	if total != expected {
+	expected := uint64(416) // 415 + the last newline added by coalesce()
+	if byteCounter.Current(uint64(0)) != expected {
 		t.Error("Coalesce error: \nexpected\n", expected, "\nactual\n", total)
 	}
 

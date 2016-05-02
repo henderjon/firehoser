@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"net/http"
 	"sync"
+	"github.com/henderjon/omnilogger/counter"
 )
 
 const (
@@ -13,6 +14,7 @@ const (
 
 var (
 	wg sync.WaitGroup // ensure that our goroutines finish before shut down
+	hitCounter  = counter.NewCounter()
 )
 
 // Adapter is a decorator that takes a handler and returns a handler.  The
@@ -149,6 +151,7 @@ func parseRequest(data chan *payload) http.Handler {
 				return
 			}
 		}
+		hitCounter.IncrBy(uint64(1))
 		http.Error(rw, (newResponse(s, rn)).JSON(), s)
 	})
 }
