@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"bufio"
 )
 
 // a custom error to signal that no file was closed
@@ -32,6 +33,7 @@ type WriteSplitter struct {
 	numBytes int            // internal byte count
 	numLines int            // internal line count
 	handle   io.WriteCloser // embedded file
+	bHandle  *bufio.Writer
 }
 
 // LineSplitter returns a WriteSplitter set to split at the given number of lines
@@ -58,6 +60,7 @@ func ByteSplitter(limit int, dir, prefix string) *WriteSplitter {
 func (ws *WriteSplitter) Close() error {
 	if ws.handle != nil { // do not try to close nil
 		ws.numLines, ws.numBytes = 0, 0
+		ws.bHandle.Flush()
 		return ws.handle.Close()
 	}
 	return ErrNotAFile // do not hide errors, but signal it's a WriteSplit error as opposed to an underlying os.* error
@@ -86,7 +89,7 @@ func (ws *WriteSplitter) Write(p []byte) (int, error) {
 		return 0, e
 	}
 
-	n, e = ws.handle.Write(p)
+	n, e = ws.bHandle.Write(p)
 	ws.numLines += 1
 	ws.numBytes += n
 	return n, e
@@ -121,8 +124,10 @@ func (ws *WriteSplitter) create() error {
 	f, e := os.Create(filename)
 	if e == nil {
 		ws.handle = f
+		ws.bHandle = bufio.NewWriter(ws.handle)
 	} else {
 		ws.handle = nil
+		ws.bHandle = nil
 	}
 	return e
 }
