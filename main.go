@@ -46,14 +46,14 @@ func main() {
 	fs := http.FileServer(http.Dir("public"))
 	http.Handle("/", http.StripPrefix("/", fs))
 	http.Handle("/log", parseRequest(inbound))
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":80", nil)
 }
 
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
 func (w *worker) coalesce(inbound chan []byte, shutdown chan struct{}) {
-	// wg.Add(1)
+	wg.Add(1)
 	for {
 		select {
 		case b := <-inbound:
@@ -65,7 +65,7 @@ func (w *worker) coalesce(inbound chan []byte, shutdown chan struct{}) {
 		case <-shutdown :
 			// log.Println(w.Len())
 			Save(w.Bytes())
-			// wg.Done()
+			wg.Done()
 			return
 		}
 	}
