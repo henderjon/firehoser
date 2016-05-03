@@ -1,18 +1,16 @@
 package main
 
 import (
-	"net/http"
-	"sync"
 	"io/ioutil"
 	"log"
+	"net/http"
+	"sync"
 )
 
 const (
 	customHeader = "X-Omnilogger-Stream" // a custom header to validate intent
 	methodPost   = "POST"                // because http doesn't have this ...
 )
-
-var pswd = ""
 
 // Adapter is a decorator that takes a handler and returns a handler.  The
 // returned handler does something before calling the handler that was passed in.
@@ -72,7 +70,7 @@ func ensurePost() Adapter {
 // for the Authorization header (e.g. 'Authorization: Bearer this-is-a-string')
 // and makes sure it matches the given password (if applicable) before calling the
 // passed handler
-func checkAuth() Adapter {
+func checkAuth(pswd string) Adapter {
 	return func(fn http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			// if no password was given to the server, leave the doors wide open
