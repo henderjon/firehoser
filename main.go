@@ -63,7 +63,7 @@ func (w *worker) coalesce(inbound chan []byte, shutdown chan struct{}) {
 			}
 			w.Write(b)
 		case <-shutdown :
-			log.Println(w.Len())
+			// log.Println(w.Len())
 			Save(w.Bytes())
 			// wg.Done()
 			return
@@ -80,7 +80,7 @@ func parseRequest(data chan []byte) http.Handler {
 		// read the request body
 		a, _ := ioutil.ReadAll(req.Body)
 		data <- a
-		log.Println(len(a))
+		// log.Println(len(a))
 		http.Error(rw, "success", s)
 	})
 }
@@ -96,5 +96,5 @@ func Save(payload []byte) {
 	}
 	defer f.Close()
 	f.Write(payload)
-	log.Println(string(payload))
+	// log.Println(string(payload))
 }
