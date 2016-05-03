@@ -21,7 +21,7 @@ func init() {
 }
 
 // watchShutdown turn on our signal watching goroutine
-func monitorStatus(shutdown chan struct{}, wg sync.WaitGroup) {
+func monitorStatus(shutdown chan struct{}, wg *sync.WaitGroup) {
 
 	var sig os.Signal
 
@@ -31,7 +31,7 @@ func monitorStatus(shutdown chan struct{}, wg sync.WaitGroup) {
 	}
 
 	shutdownLogger.Printf("\n.signal: %s; shutting down...\n", sig.String())
-	wg.Wait()
+	(*wg).Wait()
 	shutdownLogger.Printf(".shutdown: program exit at %s\n", time.Now().Format(time.RFC3339))
 	os.Exit(1)
 }

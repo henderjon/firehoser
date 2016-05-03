@@ -41,18 +41,19 @@ func main() {
 		go workers[t].coalesce(inbound, shutdown)
 	}
 
-	go monitorStatus(shutdown, wg)
+	go monitorStatus(shutdown, &wg)
 
 	fs := http.FileServer(http.Dir("public"))
 	http.Handle("/", http.StripPrefix("/", fs))
 	http.Handle("/log", parseRequest(inbound))
-	http.ListenAndServe(":80", nil)
+	http.ListenAndServe(":8080", nil)
 }
 
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
 func (w *worker) coalesce(inbound chan []byte, shutdown chan struct{}) {
+	// wg.Add(1)
 	for {
 		select {
 		case b := <-inbound:
@@ -62,7 +63,9 @@ func (w *worker) coalesce(inbound chan []byte, shutdown chan struct{}) {
 			}
 			w.Write(b)
 		case <-shutdown :
-			go Save(w.Bytes())
+			log.Println(w.Len())
+			Save(w.Bytes())
+			// wg.Done()
 			return
 		}
 	}
@@ -77,6 +80,7 @@ func parseRequest(data chan []byte) http.Handler {
 		// read the request body
 		a, _ := ioutil.ReadAll(req.Body)
 		data <- a
+		log.Println(len(a))
 		http.Error(rw, "success", s)
 	})
 }
@@ -85,13 +89,12 @@ func Save(payload []byte) {
 	if len(payload) == 0 {
 		return
 	}
-	wg.Add(1)
-	defer wg.Done()
 	filename := filepath.Join("TL1-" + time.Now().Format(time.RFC3339Nano))
 	f, e := os.Create(filename)
 	if e != nil {
 		log.Fatal(e)
 	}
+	defer f.Close()
 	f.Write(payload)
-	f.Close()
+	log.Println(string(payload))
 }
