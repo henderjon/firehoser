@@ -1,86 +1,97 @@
 package main
 
 import (
-	"flag"
-	"log"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
-	"github.com/henderjon/omnilogger/counter"
+	"bytes"
+	"log"
+	"sync"
+)
+
+const (
+	Kilobyte = 1024
+	Megabyte = Kilobyte * Kilobyte
+	Gigabyte = Kilobyte * Megabyte
+
+	Capacity = Megabyte * 64
 )
 
 var (
-	port          string                      // the port on which to listen
-	pswd          string                      // a simple means of authentication
-	forceStdout   bool                        // skip disk io and allow output redirection
-	reqBuffer     int                         // the size of the incoming request buffer (channel)
-	limit         int                         // how many lines per log file
-	byBytes       bool                        // how many bytes per log file
-	splitDir      string                      // the dir for the log file(s)
-	help          bool                        // I forgot my options
-	helpLogger    = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
-	byteCounter   = counter.NewCounter()      // count the total bytes collected for output during shutdown
-	closeInterval = 10 * time.Minute          // how often to close our file and open a new one
+	wg sync.WaitGroup // ensure that our goroutines finish before shut down
 )
 
-type payload struct {
-	stream string
-	data   []byte
+type worker struct {
+	bytes.Buffer
 }
 
-func init() {
-	flag.StringVar(&port, "port", "8080", "The port used for the server.")
-	flag.StringVar(&pswd, "auth", "", "If not empty, this is matched against the Authorization header (e.g. Authorization: Bearer my-password).")
-	flag.BoolVar(&forceStdout, "c", false, "Write to stdout; disregard -l, -b, and -prefix. **Not** recommended for production use.")
-	flag.IntVar(&reqBuffer, "buf", 0, "The size of the incoming request buffer. A zero (0) will disable buffering.")
-	flag.IntVar(&limit, "l", 5000, "The limit at which to split the log files. Assumes a line count. A zero (0) will disable splitting.")
-	flag.BoolVar(&byBytes, "bytes", false, "Split according to byte count, not line count.")
-	flag.StringVar(&splitDir, "dir", "", "A dir to use for log files. The first arg after '--' is used as a filename prefix. (e.g. '% omnilogger -dir /path/to/log-dir -- file-prefix-')")
-	flag.BoolVar(&help, "h", false, "Show this message.")
-	flag.Parse()
-
-	if help {
-		helpLogger.Println("")
-		helpLogger.Println("Omnilogger is an HTTP server that coalesces log data (line by line) from multiple sources to a common destination. This defaults to consecutively named log files of ~5000 lines.")
-		helpLogger.Println("")
-		flag.PrintDefaults()
-		helpLogger.Println("")
-		os.Exit(0)
-	}
+func NewWorker(id int) (w *worker) {
+	return &worker{}
 }
 
 func main() {
-	inbound := make(chan *payload, reqBuffer)
-	shutdown := make(chan struct{}, 0)
-
-	go monitorStatus(shutdown)                                          // catch system signals and shutdown gracefully
+	workers := make([]*worker, 4)
+	inbound := make(chan []byte, 5000)
+	shutdown := make(chan struct{})
 
 	for t := 0; t <= 3; t += 1 {
-		go coalesce(inbound, byteCounter, writeCloser(splitDir, flag.Arg(0))) // send all our request data to a single WriteCloser
+		workers[t] = &worker{}
+		go workers[t].coalesce(inbound, shutdown)
 	}
 
-	// go coalesce(inbound, byteCounter, writeCloser(splitDir, flag.Arg(0))) // send all our request data to a single WriteCloser
+	monitorStatus(shutdown, wg)
 
 	fs := http.FileServer(http.Dir("public"))
 	http.Handle("/", http.StripPrefix("/", fs))
-
-	// adapters are closures and therefore executed in reverse order
-	http.Handle("/log", Adapt(parseRequest(inbound), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(shutdown)))
-	http.ListenAndServe(":"+port, nil)
+	http.Handle("/log", parseRequest(inbound))
+	http.ListenAndServe(":80", nil)
 }
 
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
-func coalesce(inbound chan *payload, byteCounter *counter.Counter, wcr writeCloserRecycler) {
-	wc := wcr(nil)
+func (w *worker) coalesce(inbound chan []byte, shutdown chan struct{}) {
 	for {
 		select {
 		case b := <-inbound:
-			n, _ := wc.Write(append(b.data, '\n'))
-			byteCounter.IncrBy(uint64(n))
-		case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
-			wc = wcr(wc)
+			if w.Len() > Capacity {
+				go Save(w.Bytes())
+				w.Reset()
+			}
+			w.Write(b)
+		case <-shutdown :
+			go Save(w.Bytes())
+			return
 		}
 	}
+}
+
+// parseRequest returns a handler that reads the body of the request and sends
+// it on the channel to be coalesced
+func parseRequest(data chan []byte) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		defer req.Body.Close()
+		s := http.StatusOK
+		// read the request body
+		a, _ := ioutil.ReadAll(req.Body)
+		data <- a
+		http.Error(rw, "success", s)
+	})
+}
+
+func Save(payload []byte) {
+	if len(payload) == 0 {
+		return
+	}
+	wg.Add(1)
+	defer wg.Done()
+	filename := filepath.Join("TL1-" + time.Now().Format(time.RFC3339Nano))
+	f, e := os.Create(filename)
+	if e != nil {
+		log.Fatal(e)
+	}
+	f.Write(payload)
+	f.Close()
 }
