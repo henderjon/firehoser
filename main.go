@@ -41,7 +41,7 @@ func main() {
 		go workers[t].coalesce(inbound, shutdown)
 	}
 
-	monitorStatus(shutdown, wg)
+	go monitorStatus(shutdown, wg)
 
 	fs := http.FileServer(http.Dir("public"))
 	http.Handle("/", http.StripPrefix("/", fs))
