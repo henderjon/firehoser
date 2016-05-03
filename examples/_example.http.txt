@@ -1,4 +1,4 @@
-POST / HTTP/1.1
+POST /log HTTP/1.1
 X-Omnilogger-Stream: test-header-value
 Authorization: Bearer test-password-hash
 Content-Type: text/plain

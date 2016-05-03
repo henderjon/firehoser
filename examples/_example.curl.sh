@@ -1,4 +1,4 @@
-curl -X "POST" "http://localhost:8080/" \
+curl -X "POST" "http://localhost:8080/log" \
 	-H "X-Omnilogger-Stream: test-header-value" \
 	-H "Authorization: Bearer test-password-hash" \
 	-H "Content-Type: text/plain" \

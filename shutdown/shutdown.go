@@ -1,4 +1,4 @@
-package main
+package shutdown
 
 import (
 	"log"
@@ -6,7 +6,6 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"sync"
 )
 
 var (
@@ -14,24 +13,33 @@ var (
 	shutdownLogger = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
 )
 
+// A Destruct func takes no args and returns no values. It is executed as an injectable destructor
+// so that the calling context could use this func to sync.Wait() or print a pretty exit message.
+type Destructor func()
+
+// A blank channel used to signal a shutdown
+type SignalChan chan struct{}
+
+// init sets up a channel to watch for SIGINT and SIGTERM
 func init() {
 	sysSigChan = make(chan os.Signal, 1)
 	signal.Notify(sysSigChan, os.Interrupt) // syscall.SIGINT
 	signal.Notify(sysSigChan, syscall.SIGTERM)
 }
 
-// watchShutdown turn on our signal watching goroutine
-func monitorStatus(shutdown chan struct{}, wg *sync.WaitGroup) {
+// Watch is our signal watching goroutine. For a deeper discussion of the close channel
+// idiom: http://dave.cheney.net/2013/04/30/curious-channels
+func Watch(shutdown SignalChan, destruct Destructor) {
 
 	var sig os.Signal
 
-	select {
+	select { // block until we get a signal
 	case sig = <-sysSigChan:
 		close(shutdown) // idiom via: http://dave.cheney.net/2013/04/30/curious-channels
 	}
 
 	shutdownLogger.Printf("\n.signal: %s; shutting down...\n", sig.String())
-	(*wg).Wait()
+	destruct()
 	shutdownLogger.Printf(".shutdown: program exit at %s\n", time.Now().Format(time.RFC3339))
 	os.Exit(1)
 }

@@ -23,7 +23,7 @@ congue	tellus	et	congue	pretium	Nunc	posuere	consequat	molestie`)
 	client := &http.Client{}
 
 	// Create request
-	req, err := http.NewRequest("POST", "http://localhost:8080/", body)
+	req, err := http.NewRequest("POST", "http://localhost:8080/log", body)
 
 	// Headers
 	req.Header.Add("X-Omnilogger-Stream", "test-header-value")
