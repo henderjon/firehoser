@@ -74,6 +74,7 @@ func main() {
 
 	for t := 0; t < numWorkers; t += 1 {
 		workers[t] = &worker{}
+		// workers[t].Grow(capacity)
 		go workers[t].coalesce(inbound, &nameWriter{logDir, flag.Arg(0)}, shutdownCh)
 	}
 
