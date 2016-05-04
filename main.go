@@ -17,7 +17,6 @@ const (
 	Kilobyte        = 1024
 	Megabyte        = Kilobyte * Kilobyte
 	Gigabyte        = Kilobyte * Megabyte
-	defaultCapacity = 64 * Kilobyte
 	defaultInterval = 10 * time.Minute
 	defaultPrefix   = "log-omnilogs-"
 	defaultPerms    = 0644
@@ -33,7 +32,6 @@ var (
 	logDir        string                      // the dir for the log file(s)
 	help          bool                        // I forgot my options
 	wg            sync.WaitGroup              // ensure that our goroutines finish before shut down
-	capacity      = defaultCapacity           // the default capacity of the buffers
 	closeInterval = defaultInterval           // how often to close our file and open a new one
 	byteCount     = counter.NewCounter()      // keep track of how many bytes total have been received
 	hitCount      = counter.NewCounter()      // keep track of how many bytes total have been received
@@ -51,12 +49,6 @@ func init() {
 	flag.BoolVar(&help, "h", false, "Show this message.")
 	flag.Parse()
 
-	capacity = size * Kilobyte
-	if scale {
-		capacity = size * Megabyte
-	}
-	// if capacity == 0 -> stdout
-
 	if help {
 		helpLogger.Println("")
 		helpLogger.Println("Omnilogger is an HTTP server that ingests log data from multiple sources to a common destination.")
@@ -71,10 +63,13 @@ func main() {
 	inbound := make(chan []byte, requestBuffer)
 	shutdownCh := make(shutdown.ShutdownChan)
 
+	capacity := size * Kilobyte
+	if scale {
+		capacity = size * Megabyte
+	}
+	// if capacity == 0 -> stdout
 	for t := 0; t < numWorkers; t += 1 {
-		worker := &worker{}
-		worker.Grow(capacity) // allocating memory here seemed to help performance
-		go worker.coalesce(inbound, &nameWriter{logDir, flag.Arg(0)}, shutdownCh)
+		go newWorker(capacity).coalesce(inbound, &nameWriter{logDir, flag.Arg(0)}, shutdownCh)
 	}
 
 	go shutdown.Watch(shutdownCh, destructor)
@@ -96,7 +91,14 @@ func destructor() {
 
 // worker wraps a bytes.Buffer in order to attach the coalesce func
 type worker struct {
+	cutoff int
 	bytes.Buffer
+}
+
+func newWorker(max int) *worker {
+	worker := &worker{cutoff: max}
+	worker.Grow(max) // allocating memory here seemed to help performance
+	return worker
 }
 
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
@@ -107,7 +109,7 @@ func (w *worker) coalesce(inbound chan []byte, fw io.Writer, shutdownCh chan str
 	for {
 		select {
 		case b := <-inbound: // pull data out of the channel
-			if w.Len() > capacity {
+			if w.Len() >= w.cutoff {
 				go fw.Write(w.Bytes())
 				w.Reset()
 			}
