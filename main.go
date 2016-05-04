@@ -120,6 +120,9 @@ func (w *worker) coalesce(inbound chan []byte, shutdownCh chan struct{}) {
 }
 
 func (w *worker) name() string {
+	if len(w.prefix) == 0 {
+		w.prefix = "log-omnilogs-"
+	}
 	return filepath.Join(w.dir, w.prefix + time.Now().Format(time.RFC3339Nano))
 }
 
