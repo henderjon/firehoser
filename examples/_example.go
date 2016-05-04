@@ -10,20 +10,14 @@ import (
 func sendOmnilogger() {
 	// omnilogger (POST http://localhost:8080/)
 
-	body := strings.NewReader(`Lorem	ipsum	dolor	sit	amet	consectetur	adipiscing	elit	Sed
-felis	ligula	laoreet	at	sapien	a	sodales	facilisis	massa
-Nulla	eleifend	ac	purus	auctor	consectetur	Morbi	imperdiet	dictum
-ex	in	imperdiet	Quisque	et	mauris	neque	Praesent	at
-nibh	venenatis	egestas	ipsum	ac	convallis	tortor	Sed	cursus
-lectus	odio	et	tempor	risus	malesuada	eu	Praesent	nulla
-turpis	hendrerit	nec	orci	quis	gravida	pulvinar	est	Vestibulum
-congue	tellus	et	congue	pretium	Nunc	posuere	consequat	molestie`)
+	body := strings.NewReader(`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam id turpis sit amet nibh tempus fringilla. Vivamus lacinia metus et neque dignissim egestas eu non sem. Phasellus pretium augue ultrices, tristique dui vel, euismod est. Maecenas egestas mauris quis diam maximus laoreet. Curabitur mattis, diam sed mollis posuere, felis ipsum rhoncus nulla, non gravida metus ipsum lobortis orci. Mauris quis tellus et enim elementum fermentum.
+`)
 
 	// Create client
 	client := &http.Client{}
 
 	// Create request
-	req, err := http.NewRequest("POST", "http://localhost:8080/", body)
+	req, err := http.NewRequest("POST", "http://localhost:8080/log", body)
 
 	// Headers
 	req.Header.Add("X-Omnilogger-Stream", "test-header-value")

@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestMarshalJson(t *testing.T) {
+func Test_MarshalJson(t *testing.T) {
 	s := http.StatusOK
 
 	if j, err := json.Marshal(newResponse(s, 0)); err != nil {

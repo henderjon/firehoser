@@ -5,9 +5,11 @@
 [![Build Status](https://travis-ci.org/henderjon/omnilogger.svg?branch=dev)](https://travis-ci.org/henderjon/omnilogger)
 [![Go Report Card](https://goreportcard.com/badge/github.com/henderjon/omnilogger)](https://goreportcard.com/report/github.com/henderjon/omnilogger)
 
-Omnilogger is an HTTP server that coalesces log data (line by line) from
-multiple sources to a common destination (defaults to consecutively named log
-files of ~5000 lines).
+Omnilogger is an HTTP server that ingests log data from multiple sources to a
+common destination. Each worker (default 2) has a buffer in memory (default 64k).
+When a buffer is full, it's written to disk. Given the number of cores on the
+machine you're using, you'll need to play with the number and size of the workers.
+There is also a buffer (default 500) for incoming requests that feeds all four workers.
 
 Use `-h` to view the available options
 
@@ -25,8 +27,6 @@ storage facility--something like AWS S3.
 
 ### Is there anything else I ought to know?
 
-  - The library `writesplitter` is useful on it's own, and has it's own
-    [README.md](writesplitter).
   - All HTTP requests must be a POST, but the body is not parsed (e.g.
     form-encoded data will get logged as is)
   - All HTTP requests have to send a custom header ('X-Omnilogger-Stream'). As of
@@ -55,11 +55,13 @@ the default text related to a given [HTTP status code](https://golang.org/pkg/ne
 
 The goal was to collect data from a variable number of servers as quickly as
 possible. To this end, by convention, all the data is sent as interlaced csv
-rows--the last value of each line is the name of the stream. Part of being *quick*, is to do as little as possible with the data. Therefore, *at this time*, there isn't a need for that feature because a simple
-one-liner in AWK will do this after the fact when speed and time are less of an
-issue (e.g. `cat file.log | awk -c '$(NR) == "stream_name"{print}'`). If
-keeping streams separate is important, multiple instances running on different
-ports can be used to accomplish the same thing.
+rows--the last value of each line is the name of the stream. Part of being
+*quick*, is to do as little as possible with the data. Therefore, *at this
+time*, there isn't a need for that feature because a simple one-liner in AWK
+will do this after the fact when speed and time are less of an issue (e.g.
+`cat file.log | awk -c '$(NR) == "stream_name"{print}'`). If keeping streams
+separate is important, multiple instances running on different ports can be
+used to accomplish the same thing.
 
 
 ## todo

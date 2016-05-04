@@ -1,20 +1,15 @@
 package main
 
 import (
-	"bufio"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"sync"
-	"github.com/henderjon/omnilogger/counter"
 )
 
 const (
 	customHeader = "X-Omnilogger-Stream" // a custom header to validate intent
 	methodPost   = "POST"                // because http doesn't have this ...
-)
-
-var (
-	wg sync.WaitGroup // ensure that our goroutines finish before shut down
-	hitCounter  = counter.NewCounter()
 )
 
 // Adapter is a decorator that takes a handler and returns a handler.  The
@@ -75,7 +70,7 @@ func ensurePost() Adapter {
 // for the Authorization header (e.g. 'Authorization: Bearer this-is-a-string')
 // and makes sure it matches the given password (if applicable) before calling the
 // passed handler
-func checkAuth() Adapter {
+func checkAuth(pswd string) Adapter {
 	return func(fn http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			// if no password was given to the server, leave the doors wide open
@@ -128,7 +123,7 @@ func parseCustomHeader(fn http.Handler) http.Handler {
 
 // parseRequest returns a handler that reads the body of the request and sends
 // it on the channel to be coalesced
-func parseRequest(data chan *payload) http.Handler {
+func parseRequest(data chan []byte, wg *sync.WaitGroup) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// if we get here, don't let the program goroutine die before the goroutine finishes
 		wg.Add(1)
@@ -136,22 +131,15 @@ func parseRequest(data chan *payload) http.Handler {
 		defer req.Body.Close()
 		s := http.StatusOK
 		// read the request body
-		rn := 0
-		scanner := bufio.NewScanner(req.Body)
-		for scanner.Scan() {
-
-			data <- &payload{stream: req.Header[customHeader][0], data: scanner.Bytes()}
-			rn += len(scanner.Bytes())
-
-			if err := scanner.Err(); err != nil {
-				// using the default scanner, this is most likely an error with the underlying
-				// Reader which would most likely indicate an error in the request
-				s = http.StatusBadRequest
-				http.Error(rw, (newResponse(s, 0)).JSON(), s)
-				return
-			}
+		b, e := ioutil.ReadAll(req.Body)
+		if e != nil {
+			log.Println(e)
+			s = http.StatusBadRequest
+			http.Error(rw, (newResponse(s, 0)).JSON(), s)
+			return
 		}
-		hitCounter.IncrBy(uint64(1))
-		http.Error(rw, (newResponse(s, rn)).JSON(), s)
+
+		data <- b
+		http.Error(rw, (newResponse(s, len(b))).JSON(), s)
 	})
 }

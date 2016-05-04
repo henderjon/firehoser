@@ -4,26 +4,20 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 )
 
-func TestOK(t *testing.T) {
-	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
-	homeHandle := Adapt(parseRequest(ch), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(nil))
+var body = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam id turpis sit amet nibh tempus fringilla. Vivamus lacinia metus et neque dignissim egestas eu non sem. Phasellus pretium augue ultrices, tristique dui vel, euismod est. Maecenas egestas mauris quis diam maximus laoreet. Curabitur mattis, diam sed mollis posuere, felis ipsum rhoncus nulla, non gravida metus ipsum lobortis orci. Mauris quis tellus et enim elementum fermentum.
+`
 
-	mockD := bytes.NewBufferString(`Lorem ipsum dolor sit amet consectetur adipiscing elit
-Cras in lacinia eros Aliquam aliquet sapien a
-Ut mauris orci varius et cursus sed blandit
-Mauris iaculis ac magna non tincidunt In rhoncus
-Pellentesque quis erat quis ex aliquam porttitor Vestibulum
-Pellentesque nec mollis nibh interdum eleifend nisl Donec
-id commodo urna sed tempus mi Vestibulum facilisis
-imperdiet dolor sed sollicitudin Proin in lectus sed`)
+func Test_OK(t *testing.T) {
+	var wg sync.WaitGroup
+	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	homeHandle := Adapt(parseRequest(ch, &wg), parseCustomHeader, checkAuth(""), ensurePost(), checkShutdown(nil))
 
-	req, _ := http.NewRequest("POST", "", mockD)
+	req, _ := http.NewRequest("POST", "", bytes.NewBufferString(body))
 	req.Header.Add(customHeader, "test")
-
-	pswd = ""
 
 	w := httptest.NewRecorder()
 	homeHandle.ServeHTTP(w, req)
@@ -31,54 +25,39 @@ imperdiet dolor sed sollicitudin Proin in lectus sed`)
 		t.Error("Status error: expected", http.StatusOK, "actual", w.Code)
 	}
 
-	b := &bytes.Buffer{}
-	b.ReadFrom(w.Body)
-
-	expected := `{"Status":200,"Message":"OK","Received":408}` + "\n"
-	if b.String() != expected {
-		t.Error("Response error: \nexpected\n", expected, "\nactual\n", b.String())
+	expected := `{"Status":200,"Message":"OK","Received":442}` + "\n"
+	if w.Body.String() != expected {
+		t.Error("Response error: \nexpected\n", expected, "\nactual\n", w.Body.String())
 	}
 }
 
-func TestOKAuth(t *testing.T) {
-	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
-	homeHandle := Adapt(parseRequest(ch), parseCustomHeader, checkAuth(), ensurePost(), checkShutdown(nil))
+func Test_OKAuth(t *testing.T) {
+	var wg sync.WaitGroup
+	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	homeHandle := Adapt(parseRequest(ch, &wg), parseCustomHeader, checkAuth("PASSWORD"), ensurePost(), checkShutdown(nil))
 
-	mockD := bytes.NewBufferString(`Lorem ipsum dolor sit amet consectetur adipiscing elit
-Cras in lacinia eros Aliquam aliquet sapien a
-Ut mauris orci varius et cursus sed blandit
-Mauris iaculis ac magna non tincidunt In rhoncus
-Pellentesque quis erat quis ex aliquam porttitor Vestibulum
-Pellentesque nec mollis nibh interdum eleifend nisl Donec
-id commodo urna sed tempus mi Vestibulum facilisis
-imperdiet dolor sed sollicitudin Proin in lectus sed`)
-
-	req, _ := http.NewRequest("POST", "", mockD)
+	req, _ := http.NewRequest("POST", "", bytes.NewBufferString(body))
 	req.Header.Add(customHeader, "test")
 	req.Header.Add("Authorization", "Bearer PASSWORD")
 
-	pswd = "PASSWORD"
-
 	w := httptest.NewRecorder()
 	homeHandle.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Error("Status error: expected", http.StatusOK, "actual", w.Code)
 	}
 
-	b := &bytes.Buffer{}
-	b.ReadFrom(w.Body)
-
-	expected := `{"Status":200,"Message":"OK","Received":408}` + "\n"
-	if b.String() != expected {
-		t.Error("Response error: \nexpected\n", expected, "\nactual\n", b.String())
+	expected := `{"Status":200,"Message":"OK","Received":442}` + "\n"
+	if w.Body.String() != expected {
+		t.Error("Response error: \nexpected\n", expected, "\nactual\n", w.Body.String())
 	}
 }
 
-func TestBadRequest(t *testing.T) {
-	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
-	homeHandle := Adapt(parseRequest(ch), parseCustomHeader)
+func Test_BadRequest(t *testing.T) {
+	var wg sync.WaitGroup
+	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	homeHandle := Adapt(parseRequest(ch, &wg), parseCustomHeader)
 
-	req, _ := http.NewRequest("POST", "", bytes.NewBufferString("..."))
+	req, _ := http.NewRequest("POST", "", bytes.NewBufferString(body))
 	// req.Header.Add(customHeader, "test")
 
 	w := httptest.NewRecorder()
@@ -87,20 +66,18 @@ func TestBadRequest(t *testing.T) {
 		t.Error("Status error: expected", http.StatusBadRequest, "actual", w.Code)
 	}
 
-	b := &bytes.Buffer{}
-	b.ReadFrom(w.Body)
-
 	expected := `{"Status":400,"Message":"Bad Request","Received":0}` + "\n"
-	if b.String() != expected {
-		t.Error("Response error: \nexpected\n", expected, "\nactual\n", b.String())
+	if w.Body.String() != expected {
+		t.Error("Response error: \nexpected\n", expected, "\nactual\n", w.Body.String())
 	}
 }
 
-func TestMethodNotAllowed(t *testing.T) {
-	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
-	homeHandle := Adapt(parseRequest(ch), ensurePost())
+func Test_MethodNotAllowed(t *testing.T) {
+	var wg sync.WaitGroup
+	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	homeHandle := Adapt(parseRequest(ch, &wg), ensurePost())
 
-	req, _ := http.NewRequest("GET", "", bytes.NewBufferString("..."))
+	req, _ := http.NewRequest("GET", "", bytes.NewBufferString(body))
 
 	w := httptest.NewRecorder()
 	homeHandle.ServeHTTP(w, req)
@@ -108,22 +85,18 @@ func TestMethodNotAllowed(t *testing.T) {
 		t.Error("Status error: expected", http.StatusMethodNotAllowed, "actual", w.Code)
 	}
 
-	b := &bytes.Buffer{}
-	b.ReadFrom(w.Body)
-
 	expected := `{"Status":405,"Message":"Method Not Allowed","Received":0}` + "\n"
-	if b.String() != expected {
-		t.Error("Response error: \nexpected\n", expected, "\nactual\n", b.String())
+	if w.Body.String() != expected {
+		t.Error("Response error: \nexpected\n", expected, "\nactual\n", w.Body.String())
 	}
 }
 
-func TestForbidden(t *testing.T) {
-	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
-	homeHandle := Adapt(parseRequest(ch), checkAuth())
+func Test_Forbidden(t *testing.T) { // no password
+	var wg sync.WaitGroup
+	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	homeHandle := Adapt(parseRequest(ch, &wg), checkAuth("PASSWORD"))
 
-	req, _ := http.NewRequest("POST", "", bytes.NewBufferString("..."))
-
-	pswd = "PASSWORD"
+	req, _ := http.NewRequest("POST", "", bytes.NewBufferString(body))
 
 	w := httptest.NewRecorder()
 	homeHandle.ServeHTTP(w, req)
@@ -131,48 +104,40 @@ func TestForbidden(t *testing.T) {
 		t.Error("Status error: expected", http.StatusForbidden, "actual", w.Code)
 	}
 
-	b := &bytes.Buffer{}
-	b.ReadFrom(w.Body)
-
 	expected := `{"Status":403,"Message":"Forbidden","Received":0}` + "\n"
-	if b.String() != expected {
-		t.Error("Response error: \nexpected\n", expected, "\nactual\n", b.String())
+	if w.Body.String() != expected {
+		t.Error("Response error: \nexpected\n", expected, "\nactual\n", w.Body.String())
 	}
 }
 
-func TestForbidden2(t *testing.T) {
-	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
-	homeHandle := Adapt(parseRequest(ch), checkAuth())
+func Test_Forbidden2(t *testing.T) { // wrong password
+	var wg sync.WaitGroup
+	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+	homeHandle := Adapt(parseRequest(ch, &wg), checkAuth("PASSWORD"))
 
-	req, _ := http.NewRequest("POST", "", bytes.NewBufferString("..."))
+	req, _ := http.NewRequest("POST", "", bytes.NewBufferString(body))
 	req.Header.Add("Authorization", "PSWD")
 
-	pswd = "PASSWORD"
-
 	w := httptest.NewRecorder()
 	homeHandle.ServeHTTP(w, req)
 	if w.Code != http.StatusForbidden {
 		t.Error("Status error: expected", http.StatusForbidden, "actual", w.Code)
 	}
 
-	b := &bytes.Buffer{}
-	b.ReadFrom(w.Body)
-
 	expected := `{"Status":403,"Message":"Forbidden","Received":0}` + "\n"
-	if b.String() != expected {
-		t.Error("Response error: \nexpected\n", expected, "\nactual\n", b.String())
+	if w.Body.String() != expected {
+		t.Error("Response error: \nexpected\n", expected, "\nactual\n", w.Body.String())
 	}
 }
 
-func TestShutdown(t *testing.T) {
-	ch := make(chan *payload, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
+func Test_Shutdown(t *testing.T) {
+	var wg sync.WaitGroup
+	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
 	sh := make(chan struct{}, 1)
-	homeHandle := Adapt(parseRequest(ch), checkShutdown(sh))
+	homeHandle := Adapt(parseRequest(ch, &wg), checkShutdown(sh))
 
-	req, _ := http.NewRequest("POST", "", bytes.NewBufferString("..."))
+	req, _ := http.NewRequest("POST", "", bytes.NewBufferString(body))
 	req.Header.Add(customHeader, "test")
-
-	pswd = ""
 
 	close(sh)
 
@@ -182,11 +147,8 @@ func TestShutdown(t *testing.T) {
 		t.Error("Status error: expected", http.StatusServiceUnavailable, "actual", w.Code)
 	}
 
-	b := &bytes.Buffer{}
-	b.ReadFrom(w.Body)
-
 	expected := `{"Status":503,"Message":"Service Unavailable","Received":0}` + "\n"
-	if b.String() != expected {
-		t.Error("Response error: \nexpected\n", expected, "\nactual\n", b.String())
+	if w.Body.String() != expected {
+		t.Error("Response error: \nexpected\n", expected, "\nactual\n", w.Body.String())
 	}
 }
