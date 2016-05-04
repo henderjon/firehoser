@@ -18,7 +18,7 @@ var (
 type Destructor func()
 
 // A blank channel used to signal a shutdown
-type SignalChan chan struct{}
+type ShutdownChan chan struct{}
 
 // init sets up a channel to watch for SIGINT and SIGTERM
 func init() {
@@ -29,7 +29,7 @@ func init() {
 
 // Watch is our signal watching goroutine. For a deeper discussion of the close channel
 // idiom: http://dave.cheney.net/2013/04/30/curious-channels
-func Watch(shutdown SignalChan, destruct Destructor) {
+func Watch(shutdown ShutdownChan, destruct Destructor) {
 
 	var sig os.Signal
 

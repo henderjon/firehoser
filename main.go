@@ -70,7 +70,7 @@ func init() {
 func main() {
 	workers := make([]*worker, numWorkers)
 	inbound := make(chan []byte, requestBuffer)
-	shutdownCh := make(shutdown.SignalChan)
+	shutdownCh := make(shutdown.ShutdownChan)
 
 	for t := 0; t < numWorkers; t += 1 {
 		workers[t] = &worker{}

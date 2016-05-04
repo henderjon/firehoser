@@ -1,8 +1,8 @@
 package main
 
 import (
-	"testing"
 	"io"
+	"testing"
 )
 
 func Test_ioWriter(t *testing.T) {
