@@ -68,14 +68,13 @@ func init() {
 }
 
 func main() {
-	workers := make([]*worker, numWorkers)
 	inbound := make(chan []byte, requestBuffer)
 	shutdownCh := make(shutdown.ShutdownChan)
 
 	for t := 0; t < numWorkers; t += 1 {
-		workers[t] = &worker{}
-		// workers[t].Grow(capacity)
-		go workers[t].coalesce(inbound, &nameWriter{logDir, flag.Arg(0)}, shutdownCh)
+		worker := &worker{}
+		worker.Grow(capacity) // allocating memory here seemed to help performance
+		go worker.coalesce(inbound, &nameWriter{logDir, flag.Arg(0)}, shutdownCh)
 	}
 
 	go shutdown.Watch(shutdownCh, destructor)
