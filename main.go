@@ -5,18 +5,22 @@ import (
 	"flag"
 	"github.com/henderjon/omnilogger/counter"
 	"github.com/henderjon/omnilogger/shutdown"
+	"io"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 )
 
 const (
-	Kilobyte = 1024
-	Megabyte = Kilobyte * Kilobyte
-	Gigabyte = Kilobyte * Megabyte
+	Kilobyte        = 1024
+	Megabyte        = Kilobyte * Kilobyte
+	Gigabyte        = Kilobyte * Megabyte
+	defaultCapacity = 64 * Kilobyte
+	defaultInterval = 10 * time.Minute
+	defaultPrefix   = "log-omnilogs-"
+	defaultPerms    = 0644
 )
 
 var (
@@ -29,17 +33,12 @@ var (
 	logDir        string                      // the dir for the log file(s)
 	help          bool                        // I forgot my options
 	wg            sync.WaitGroup              // ensure that our goroutines finish before shut down
-	capacity      = Kilobyte * 64             // the default capacity of the buffers
-	helpLogger    = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
-	closeInterval = 10 * time.Minute          // how often to close our file and open a new one
+	capacity      = defaultCapacity           // the default capacity of the buffers
+	closeInterval = defaultInterval           // how often to close our file and open a new one
 	byteCount     = counter.NewCounter()      // keep track of how many bytes total have been received
 	hitCount      = counter.NewCounter()      // keep track of how many bytes total have been received
+	helpLogger    = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
 )
-
-type worker struct {
-	dir, prefix string
-	bytes.Buffer
-}
 
 func init() {
 	flag.StringVar(&port, "port", "8080", "The port used for the server.")
@@ -69,15 +68,13 @@ func init() {
 }
 
 func main() {
-	workers := make([]*worker, 4)
+	workers := make([]*worker, numWorkers)
 	inbound := make(chan []byte, requestBuffer)
 	shutdownCh := make(shutdown.SignalChan)
 
 	for t := 0; t < numWorkers; t += 1 {
-		workers[t] = &worker{
-			dir: logDir, prefix: flag.Arg(0),
-		}
-		go workers[t].coalesce(inbound, shutdownCh)
+		workers[t] = &worker{}
+		go workers[t].coalesce(inbound, &nameWriter{logDir, flag.Arg(0)}, shutdownCh)
 	}
 
 	go shutdown.Watch(shutdownCh, destructor)
@@ -90,43 +87,44 @@ func main() {
 	}
 }
 
+// destructor is the func that gets called if we catch a shutdown signal. It waits
+// for all goroutines to finish and then prints a final status message
+func destructor() {
+	wg.Wait()
+	helpLogger.Printf(".collected %dm from %d hits in %s", byteCount.Current(Megabyte), hitCount.Current(0), byteCount.Since())
+}
+
+// worker wraps a bytes.Buffer in order to attach the coalesce func
+type worker struct {
+	bytes.Buffer
+}
+
 // coalesce runs in it's own goroutine and ranges over a channel and writing the
 // data to an io.Writer. All our goroutines send data on this channel and this
 // func coalesces them in to one stream.
-func (w *worker) coalesce(inbound chan []byte, shutdownCh chan struct{}) {
+func (w *worker) coalesce(inbound chan []byte, fw io.Writer, shutdownCh chan struct{}) {
 	wg.Add(1)
 	for {
 		select {
 		case b := <-inbound: // pull data out of the channel
 			if w.Len() > capacity {
-				go fwrite(w.name(), w.Bytes())
+				go fw.Write(w.Bytes())
 				w.Reset()
 			}
 
 			n, _ := w.Write(b)
+
 			byteCount.IncrBy(uint64(n))
 			hitCount.IncrBy(uint64(1))
 
 		case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
-			go fwrite(w.name(), w.Bytes())
+			go fw.Write(w.Bytes())
 			w.Reset()
 
 		case <-shutdownCh: // if we're shutting down, make sure we flush to disk first
-			fwrite(w.name(), w.Bytes())
+			fw.Write(w.Bytes())
 			wg.Done()
 			return
 		}
 	}
-}
-
-func (w *worker) name() string {
-	if len(w.prefix) == 0 {
-		w.prefix = "log-omnilogs-"
-	}
-	return filepath.Join(w.dir, w.prefix + time.Now().Format(time.RFC3339Nano))
-}
-
-func destructor() {
-	wg.Wait()
-	helpLogger.Printf(".collected %dk from %d hits in %s", byteCount.Current(Kilobyte), hitCount.Current(0), byteCount.Since())
 }
