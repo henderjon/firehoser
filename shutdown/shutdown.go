@@ -23,7 +23,7 @@ type ShutdownChan chan struct{}
 // init sets up a channel to watch for SIGINT and SIGTERM
 func init() {
 	sysSigChan = make(chan os.Signal, 1)
-	signal.Notify(sysSigChan, os.Interrupt) // syscall.SIGINT
+	signal.Notify(sysSigChan, syscall.SIGINT)
 	signal.Notify(sysSigChan, syscall.SIGTERM)
 }
 
