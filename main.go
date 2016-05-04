@@ -95,6 +95,7 @@ type worker struct {
 	bytes.Buffer
 }
 
+// newWorker creates a new worker with and allocates the memory necessary
 func newWorker(max int) *worker {
 	worker := &worker{cutoff: max}
 	worker.Grow(max) // allocating memory here seemed to help performance
