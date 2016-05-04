@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 // a custom error to signal that no file was closed
@@ -15,12 +14,18 @@ var (
 	ErrNotADir  = errors.New("fwrite: specified dir is not a dir")
 )
 
-func fwrite(payload []byte) {
+func init() {
+	if e := checkDir(logDir); e != nil {
+		log.Fatal(e)
+	}
+}
+
+func fwrite(name string, payload []byte) {
 	if len(payload) == 0 {
 		return
 	}
 
-	f, e := create("", "TL1-")
+	f, e := create(name)
 	if e != nil {
 		log.Println(e)
 	}
@@ -40,11 +45,6 @@ func checkDir(dir string) error {
 }
 
 // createFile is the file creating function that wraps os.Create
-func create(dir, prefix string) (io.WriteCloser, error) {
-	var f *os.File
-	var e error
-
-	filename := filepath.Join(dir, prefix+time.Now().Format(time.RFC3339Nano))
-	f, e = os.Create(filename)
-	return f, e
+func create(fname string) (io.WriteCloser, error) {
+	return os.Create(fname)
 }

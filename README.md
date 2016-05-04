@@ -5,9 +5,11 @@
 [![Build Status](https://travis-ci.org/henderjon/omnilogger.svg?branch=dev)](https://travis-ci.org/henderjon/omnilogger)
 [![Go Report Card](https://goreportcard.com/badge/github.com/henderjon/omnilogger)](https://goreportcard.com/report/github.com/henderjon/omnilogger)
 
-Omnilogger is an HTTP server that coalesces log data (line by line) from
-multiple sources to a common destination (defaults to consecutively named log
-files of ~5000 lines).
+Omnilogger is an HTTP server that ingests log data from multiple sources to a
+common destination. Each worker (default 2) has a buffer in memory (default 64k).
+When a buffer is filled, it's writted to disk. Given the number of cores on the
+machine you're using, you'll need to play with the number and size of the workers.
+There is also a buffer (default 500) for incoming requests that feeds all four workers.
 
 Use `-h` to view the available options
 
