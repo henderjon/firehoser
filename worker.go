@@ -38,7 +38,7 @@ func (w *worker) coalesce(inbound chan []byte, fw io.Writer, sig shutdown.Signal
 			byteCount.IncrBy(uint64(n))
 			hitCount.IncrBy(uint64(1))
 
-		case <-time.After(closeInterval): // after 10 minutes of inactivity close the file
+		case <-time.After(closeInterval): // after 10 minutes of inactivity flush to disk
 			go fw.Write(w.Bytes())
 			w.Reset()
 
