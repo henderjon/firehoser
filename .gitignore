@@ -2,3 +2,4 @@ omnilogger
 coverage.out
 public/*
 !public/.placeholder
+etc/*
