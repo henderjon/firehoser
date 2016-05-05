@@ -58,6 +58,9 @@ func init() {
 		helpLogger.Println("")
 		os.Exit(0)
 	}
+
+	welcome()
+
 }
 
 func main() {
@@ -68,7 +71,7 @@ func main() {
 	if scale {
 		capacity = size * Megabyte
 	}
-	// if capacity == 0 -> stdout
+	// if capacity == 0 -> stdout?
 	for t := 0; t < numWorkers; t += 1 {
 		go newWorker(capacity).coalesce(inbound, &nameWriter{logDir, flag.Arg(0)}, signal)
 	}

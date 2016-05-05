@@ -21,9 +21,11 @@ func (nw nameWriter) name() string {
 func (nw nameWriter) Write(b []byte) (int, error) {
 	var e error
 
-	e = ioutil.WriteFile(nw.name(), b, defaultPerms)
-	if e != nil {
-		log.Println(e)
+	if len(b) > 1 {
+		e = ioutil.WriteFile(nw.name(), b, defaultPerms)
+		if e != nil {
+			log.Println(e)
+		}
 	}
 
 	return len(b), e
