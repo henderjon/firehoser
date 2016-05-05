@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// the uint64 representation of a Kilobyte, Megabyte, Gigabyte as well as some program defaults
 const (
 	Kilobyte        = 1024
 	Megabyte        = Kilobyte * Kilobyte

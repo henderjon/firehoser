@@ -13,12 +13,12 @@ var (
 	shutdownLogger = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
 )
 
-// A Destruct func takes no args and returns no values. It is executed as an injectable destructor
+// Destruct is a func takes no args and returns no values. It is executed as an injectable destructor
 // so that the calling context could use this func to sync.Wait() or print a pretty exit message.
 type Destructor func()
 
-// A blank channel used to signal a shutdown
-type ShutdownChan chan struct{}
+// SignalChan is a blank channel used to signal a shutdown
+type SignalChan chan struct{}
 
 // init sets up a channel to watch for SIGINT and SIGTERM
 func init() {
@@ -29,7 +29,7 @@ func init() {
 
 // Watch is our signal watching goroutine. For a deeper discussion of the close channel
 // idiom: http://dave.cheney.net/2013/04/30/curious-channels
-func Watch(shutdown ShutdownChan, destruct Destructor) {
+func Watch(shutdown SignalChan, destruct Destructor) {
 
 	var sig os.Signal
 
