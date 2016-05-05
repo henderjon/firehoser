@@ -58,7 +58,7 @@ possible. To this end, by convention, all the data is sent as interlaced csv
 rows--the last value of each line is the name of the stream. Part of being
 *quick*, is to do as little as possible with the data. Therefore, *at this
 time*, there isn't a need for that feature because a simple one-liner in AWK
-will do this after the fact when speed and time are less of an issue (e.g.
+will do this after the fact when speed and time are less of a concern (e.g.
 `cat file.log | awk -c '$(NR) == "stream_name"{print}'`). If keeping streams
 separate is important, multiple instances running on different ports can be
 used to accomplish the same thing.
