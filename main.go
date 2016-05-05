@@ -62,7 +62,7 @@ func init() {
 
 func main() {
 	inbound := make(chan []byte, requestBuffer)
-	shutdownCh := make(shutdown.ShutdownChan)
+	shutdownCh := make(shutdown.SignalChan)
 
 	capacity := size * Kilobyte
 	if scale {
