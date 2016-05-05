@@ -11,14 +11,16 @@ const (
 	Gigabyte uint64 = Kilobyte * Megabyte
 )
 
+// Counter is a simple counter combined with a date/timestamp.
 type Counter struct {
-	count uint64 // 9223372036854775806
+	count   uint64 // 9223372036854775806
 	created time.Time
 }
 
+// NewCounter returns a Counter with a timestamp set to now.
 func NewCounter() *Counter {
 	return &Counter{
-		count: uint64(0),
+		count:   uint64(0),
 		created: time.Now(),
 	}
 }
