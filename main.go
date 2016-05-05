@@ -33,6 +33,8 @@ var (
 	logDir        string                      // the dir for the log file(s)
 	help          bool                        // I forgot my options
 	wg            sync.WaitGroup              // ensure that our goroutines finish before shut down
+	methodPost    = "POST"                    // because net/http doesn't have this ...
+	customHeader  = "X-Omnilogger-Stream"     // a custom header to validate intent
 	closeInterval = defaultInterval           // how often to close our file and open a new one
 	byteCount     = counter.NewCounter()      // keep track of how many bytes total have been received
 	hitCount      = counter.NewCounter()      // keep track of how many bytes total have been received
@@ -77,7 +79,7 @@ func main() {
 
 	fs := http.FileServer(http.Dir("public"))
 	http.Handle("/", http.StripPrefix("/", fs))
-	http.Handle("/log", Adapt(parseRequest(inbound, &wg), parseCustomHeader, checkAuth(pswd), ensurePost(), checkShutdown(shutdownCh)))
+	http.Handle("/log", Adapt(parseRequest(inbound, &wg), checkHeader(customHeader), checkAuth(pswd), checkMethod(methodPost), checkShutdown(shutdownCh)))
 	if e := http.ListenAndServe(":"+port, nil); e != nil {
 		log.Fatal(e)
 	}

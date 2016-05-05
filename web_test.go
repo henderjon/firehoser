@@ -14,7 +14,7 @@ var body = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam id 
 func Test_OK(t *testing.T) {
 	var wg sync.WaitGroup
 	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
-	homeHandle := Adapt(parseRequest(ch, &wg), parseCustomHeader, checkAuth(""), ensurePost(), checkShutdown(nil))
+	homeHandle := Adapt(parseRequest(ch, &wg), checkHeader(customHeader), checkAuth(""), checkMethod(methodPost), checkShutdown(nil))
 
 	req, _ := http.NewRequest("POST", "", bytes.NewBufferString(body))
 	req.Header.Add(customHeader, "test")
@@ -34,7 +34,7 @@ func Test_OK(t *testing.T) {
 func Test_OKAuth(t *testing.T) {
 	var wg sync.WaitGroup
 	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
-	homeHandle := Adapt(parseRequest(ch, &wg), parseCustomHeader, checkAuth("PASSWORD"), ensurePost(), checkShutdown(nil))
+	homeHandle := Adapt(parseRequest(ch, &wg), checkHeader(customHeader), checkAuth("PASSWORD"), checkMethod(methodPost), checkShutdown(nil))
 
 	req, _ := http.NewRequest("POST", "", bytes.NewBufferString(body))
 	req.Header.Add(customHeader, "test")
@@ -55,7 +55,7 @@ func Test_OKAuth(t *testing.T) {
 func Test_BadRequest(t *testing.T) {
 	var wg sync.WaitGroup
 	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
-	homeHandle := Adapt(parseRequest(ch, &wg), parseCustomHeader)
+	homeHandle := Adapt(parseRequest(ch, &wg), checkHeader(customHeader))
 
 	req, _ := http.NewRequest("POST", "", bytes.NewBufferString(body))
 	// req.Header.Add(customHeader, "test")
@@ -75,7 +75,7 @@ func Test_BadRequest(t *testing.T) {
 func Test_MethodNotAllowed(t *testing.T) {
 	var wg sync.WaitGroup
 	ch := make(chan []byte, 9) // buffer the chan to avoid blocking since we're not reading OUT of the channel
-	homeHandle := Adapt(parseRequest(ch, &wg), ensurePost())
+	homeHandle := Adapt(parseRequest(ch, &wg), checkMethod(methodPost))
 
 	req, _ := http.NewRequest("GET", "", bytes.NewBufferString(body))
 
