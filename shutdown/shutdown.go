@@ -13,7 +13,7 @@ var (
 	shutdownLogger = log.New(os.Stderr, "", 0) // log to stderr without the timestamps
 )
 
-// Destruct is a func takes no args and returns no values. It is executed as an injectable destructor
+// Destructor is a func takes no args and returns no values. It is executed as an injectable destructor
 // so that the calling context could use this func to sync.Wait() or print a pretty exit message.
 type Destructor func()
 
