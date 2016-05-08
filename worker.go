@@ -28,9 +28,12 @@ func (w *worker) coalesce(inbound chan []byte, fw io.Writer, sig shutdown.Signal
 	for {
 		select {
 		case b := <-inbound: // pull data out of the channel
-			n := len(b)
-			go fw.Write(b)
-			w.Reset()
+			if w.Len() >= w.cutoff {
+				go fw.Write(w.Bytes())
+				w.Reset()
+			}
+
+			n, _ := w.Write(b)
 
 			byteCount.IncrBy(uint64(n))
 			hitCount.IncrBy(uint64(1))

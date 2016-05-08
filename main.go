@@ -9,6 +9,8 @@ import (
 	"os"
 	"sync"
 	"time"
+	"path/filepath"
+	"io/ioutil"
 )
 
 // the uint64 representation of a Kilobyte, Megabyte, Gigabyte as well as some program defaults
@@ -67,13 +69,15 @@ func main() {
 	inbound := make(chan []byte, requestBuffer)
 	signal := make(shutdown.SignalChan)
 
-	capacity := size * Kilobyte
-	if scale {
-		capacity = size * Megabyte
-	}
 	// if capacity == 0 -> stdout?
 	for t := 0; t < numWorkers; t += 1 {
-		go newWorker(capacity).coalesce(inbound, &nameWriter{logDir, flag.Arg(0)}, signal)
+		go func(){
+			for {
+				b := <-inbound // pull data out of the channel
+				name := filepath.Join(logDir, flag.Arg(0) + time.Now().Format(time.RFC3339Nano))
+				ioutil.WriteFile(name, b, defaultPerms)
+			}
+		}()
 	}
 
 	go shutdown.Watch(signal, destructor)
