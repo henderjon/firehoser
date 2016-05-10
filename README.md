@@ -1,3 +1,17 @@
+# finale
+
+For a few days I fought with omnilogger. I wanted to see stability under
+load. To varying degrees I saw what I wanted but not consistently
+enough. In my last test I stripped everything out (`raw/`) and attached an
+AWS XFS drive. It turns out the largest factor hindering performance
+was/is disc IO. Since the whole point of omnilogger was to get HTTP
+request bodies to disk *quickly*, this was **quite** a limiting factor.
+
+Ultimately, as well as this code worked, I'm moving to a redis based
+system where I can better manage disk IO. If omnilogger degrades to a
+memory buffer, there are other better applications for that.
+
+
 ## log all the things
 
 [![License: BSD-3](https://img.shields.io/badge/license-BSD--3-blue.svg)](https://img.shields.io/badge/license-BSD--3-blue.svg)
